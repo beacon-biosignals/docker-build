@@ -71,5 +71,5 @@ jobs:
         with:
           package: temporary/whalesay
           older-than: 30 minutes
-          delete-untagged: true
+          keep-n-tagged: 0
           exclude-tags: branch-main,cache-branch-main
