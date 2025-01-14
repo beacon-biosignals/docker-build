@@ -25,6 +25,8 @@ jobs:
             sha: ${{ github.event.pull_request.head.sha }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.commit.sha }}
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
@@ -51,6 +53,7 @@ jobs:
       - name: Validate cache images
         run: |
           docker manifest inspect "${{ steps.build.outputs.image-repository }}:cache-sha-${{ matrix.commit.sha }}"
+          docker manifest inspect "${{ steps.build.outputs.image-repository }}:cache-branch-${{ github.head_ref || (github.ref_type == 'branch' && github.ref_name) }}"
       - name: Validate annotations
         run: |
           set -x
