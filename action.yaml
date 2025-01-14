@@ -113,11 +113,13 @@ runs:
       run: |
         echo "DOCKER_METADATA_OUTPUT_VERSION=" >>"$GITHUB_ENV"
         echo "DOCKER_METADATA_OUTPUT_TAGS=" >>"$GITHUB_ENV"
+        echo "DOCKER_METADATA_OUTPUT_LABELS=" >>"$GITHUB_ENV"
         echo "DOCKER_METADATA_OUTPUT_ANNOTATIONS=" >>"$GITHUB_ENV"
         echo "DOCKER_METADATA_OUTPUT_JSON=" >>"$GITHUB_ENV"
         echo "DOCKER_METADATA_OUTPUT_BAKE_FILE_TAGS=" >>"$GITHUB_ENV"
         echo "DOCKER_METADATA_OUTPUT_BAKE_FILE_LABELS=" >>"$GITHUB_ENV"
         echo "DOCKER_METADATA_OUTPUT_BAKE_FILE_ANNOTATIONS=" >>"$GITHUB_ENV"
+        echo "DOCKER_METADATA_OUTPUT_BAKE_FILE=" >>"$GITHUB_ENV"
     - name: Docker cache metadata
       id: cache
       shell: bash
