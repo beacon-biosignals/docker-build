@@ -1,4 +1,9 @@
 ---
+name: Docker Build
+description: Build a Docker image while utilize layer caching from the image repository.
+branding:
+  color: blue
+  icon: layers
 inputs:
   image-repository:
     required: true

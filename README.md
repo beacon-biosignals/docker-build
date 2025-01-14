@@ -1,9 +1,9 @@
 # Docker Build
 
 Build a Docker image while utilizing [layer caching](https://docs.docker.com/build/cache/)
-backed from the image repository. [Docker does support using GitHub Actions cache](https://docs.docker.com/build/cache/backends/gha/)
-as a layer cache backend but the default cache limit for a repository is 10 GB which is
-quite small for Docker images.
+backed from the image repository. Although [Docker does support using GitHub Actions cache](https://docs.docker.com/build/cache/backends/gha/)
+as a layer cache backend but the GHA cache limit for a repository is 10 GB which is
+quite limiting for Docker images.
 
 We recommend utilizing a separate image repositories for deployment and production (e.g.`temporary/my-image` and `permanent/my-image`) to make it easier to separate temporary images from permanent images meant for end users. Promoting temporary images to be permanent can be done with `docker push` or [`regctl image copy --digest-tags`](https://github.com/regclient/regclient/blob/main/docs/regctl.md#registry-commands) if you want the digest to be identical across registries.
 
