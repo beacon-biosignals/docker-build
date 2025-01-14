@@ -60,6 +60,13 @@ runs:
           type=sha,prefix=sha-
           type=ref,prefix=pr-,event=pr
           type=raw,prefix=branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
+        # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+        # TODO: May want to drop `build.commit-sha`
+        labels: |
+          org.opencontainers.image.revision=${{ steps.commit-sha.outputs.head }}
+          build.run-id=${{ github.run_id }}
+          build.run-attempt=${{ github.run_attempt }}
+          build.commit-sha=${{ steps.commit-sha.outputs.head }}
       env:
         # https://github.com/docker/metadata-action/issues/206
         DOCKER_METADATA_PR_HEAD_SHA: "true"
@@ -122,12 +129,7 @@ runs:
         cache-from: ${{ steps.cache.outputs.from-tags }}
         cache-to: ${{ steps.cache.outputs.to-tags }}
         tags: ${{ steps.metadata.outputs.tags }}
-        # TODO: May want to drop `build.commit-sha`
-        annotations: |
-          ${{ steps.metadata.outputs.annotations }}
-          build.run-id=${{ github.run_id }}
-          build.run-attempt=${{ github.run_attempt }}
-          build.commit-sha=${{ steps.commit-sha.outputs.head }}
+        annotations: ${{ steps.metadata.outputs.annotations }}
         # Required to be true so we can consistently get access to the `digest`:
         # https://github.com/docker/build-push-action/issues/906#issuecomment-1674567311
         push: true
