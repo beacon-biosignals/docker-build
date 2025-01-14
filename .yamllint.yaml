@@ -1,0 +1,8 @@
+---
+rules:
+  indentation:
+    spaces: 2
+    indent-sequences: true
+  document-start:
+    present: true
+  new-line-at-end-of-file: enable

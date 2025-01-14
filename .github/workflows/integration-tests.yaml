@@ -1,0 +1,25 @@
+---
+name: Integration Tests
+on:
+  pull_request:
+    paths:
+      - "action.yaml"
+      - ".github/workflows/integration-tests.yaml"
+
+jobs:
+  test:
+    name: Test
+    # These permissions are needed to:
+    # - Checkout the repo
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        id: build
+        with:
+          image-repository: whalesay
+          context: test
+          build-args: |
+            DEBIAN_VERSION=bookworm

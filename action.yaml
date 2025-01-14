@@ -11,6 +11,8 @@ inputs:
   from-scratch:
     description: Do not read from the cache when building the image
     default: "false"
+  push:
+    default: "true"
 outputs:
   image:
     value: ${{ inputs.image-repository }}@${{ steps.build-push.outputs.digest }}
@@ -121,7 +123,7 @@ runs:
           build.run-id=${{ github.run_id }}
           build.run-attempt=${{ github.run_attempt }}
           build.commit-sha=${{ steps.commit-sha.outputs.head }}
-        push: true
+        push: ${{ inputs.push }}
         provenance: false  # Prevent pushing a docker manifest
     - name: Inspect Docker Manifest
       shell: bash

@@ -1,0 +1,25 @@
+---
+name: GitHub Actions
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/*"
+
+jobs:
+  lint:
+    name: Lint
+    # These permissions are needed to:
+    # - Checkout the Git repo (`contents: read`)
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # https://github.com/rhysd/actionlint/blob/v1.7.6/docs/usage.md#use-actionlint-on-github-actions
+      # https://github.com/rhysd/actionlint/blob/v1.7.6/docs/usage.md#reviewdog
+      # https://github.com/reviewdog/reviewdog#filter-mode
+      # No support for non-workflows yet: https://github.com/rhysd/actionlint/issues/46
+      - uses: reviewdog/action-actionlint@a1b7ce56be870acfe94b83ce5f6da076aecc6d8c # v1.62.0
+        with:
+          fail_level: error
+          filter_mode: nofilter  # Post results on all results and not just changed files
