@@ -7,8 +7,8 @@ on:
       - ".github/workflows/integration-tests.yaml"
 
 jobs:
-  test:
-    name: Test
+  test-merge-commit:
+    name: Test Merge Commit
     # These permissions are needed to:
     # - Checkout the repo
     permissions:
@@ -30,3 +30,37 @@ jobs:
           context: test
           build-args: |
             DEBIAN_VERSION=bookworm
+      - run: |
+          set -x
+          json="$(docker manifest inspect "${{ steps.build.outputs.image }}")"
+          [[ "$(jq -r '.annotations."org.opencontainers.image.revision"' <<<"$json")" == "${{ github.sha }}" ]] || exit 1
+
+  test-head-commit:
+    name: Test Head Commit
+    # These permissions are needed to:
+    # - Checkout the repo
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io/beacon-biosignals/whalesay
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - uses: ./
+        id: build
+        with:
+          image-repository: ghcr.io/beacon-biosignals/whalesay
+          context: test
+          build-args: |
+            DEBIAN_VERSION=bookworm
+      - run: |
+          set -x
+          json="$(docker manifest inspect "${{ steps.build.outputs.image }}")"
+          [[ "$(jq -r '.annotations."org.opencontainers.image.revision"' <<<"$json")" == "${{ github.pull_request.head.sha }}" ]] || exit 1
