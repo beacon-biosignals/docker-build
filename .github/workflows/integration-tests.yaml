@@ -37,7 +37,7 @@ jobs:
           image-repository: ghcr.io/beacon-biosignals/whalesay
           context: test
           build-args: |
-            DEBIAN_VERSION=bookworm
+            DEBIAN_VERSION=12.9
       - name: Validate image works
         run: |
           docker pull "${{ steps.build.outputs.image }}"
@@ -46,6 +46,8 @@ jobs:
               echo "$output"
               exit 1
           fi
+          debian_version="$(docker run --entrypoint=/bin/cat "${{ steps.build.outputs.image }}" /etc/debian_version)"
+          [[ "$debian_version" == "12.9" ]] || exit 2
       - name: Validate annotations
         run: |
           set -x
