@@ -6,6 +6,8 @@ on:
       - "action.yaml"
       - ".github/workflows/integration-tests.yaml"
   push:
+    branches:
+      - main
     paths:
       - "action.yaml"
       - ".github/workflows/integration-tests.yaml"
@@ -63,6 +65,7 @@ jobs:
           [[ "$debian_version" == "12.9" ]] || exit 2
       - name: Validate layer caching
         run: |
+          set -x
           layer_created_at="$(docker run --entrypoint=/bin/cat "${{ steps.build.outputs.image }}" /etc/layer-created-at)"
           if [[ "$from_scratch" == "true" ]]; then
               [[ "$(date -d "$layer_created_at" +%s)" -gt "$(date -d "$job_started_at" +%s)" ]] || exit 1
