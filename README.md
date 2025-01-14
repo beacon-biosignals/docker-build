@@ -1,16 +1,21 @@
 # Docker Build
 
-Build a Docker image while utilizing [layer caching](https://docs.docker.com/build/cache/)
-backed from the image repository. Although [Docker does support using GitHub Actions cache](https://docs.docker.com/build/cache/backends/gha/)
-as a layer cache backend but the GHA cache limit for a repository is 10 GB which is
-quite limiting for Docker images.
+Build a Docker image while utilizing [layer caching](https://docs.docker.com/build/cache/) backed from the image repository. Image tags will be automatically created based upon the relevant PR, branch name, and commit SHA.
 
-We recommend utilizing a separate image repositories for deployment and production (e.g.`temporary/my-image` and `permanent/my-image`) to make it easier to separate temporary images from permanent images meant for end users. Promoting temporary images to be permanent can be done with `docker push` or [`regctl image copy --digest-tags`](https://github.com/regclient/regclient/blob/main/docs/regctl.md#registry-commands) if you want the digest to be identical across registries.
+When using this action we recommend utilizing a separate image repositories for development and production (e.g.`temporary/my-image` and `permanent/my-image`) to make it easier to separate temporary images from permanent images meant for end users. The `beacon-biosignals/docker-build` action is used to build temporary images under development. Once a temporary image is ready for production it can be promoted to be permanent by using `docker tag`/`docker push` or [`regctl image copy --digest-tags`](https://github.com/regclient/regclient/blob/main/docs/regctl.md#registry-commands) (if you want the digest to be identical across registries) to transfer the image.
+
+Note that although [Docker does support using GitHub Actions cache](https://docs.docker.com/build/cache/backends/gha/) as a layer cache backend the GHA cache limit for a repository is 10 GB which is quite limiting for larger Docker images.
 
 ## Example
 
 ```yaml
 ---
+on:
+  pull_request: {}
+  # Trigger this build workflow on "main". See `from-scratch`
+  push:
+    branches:
+      - main
 jobs:
   example:
     # These permissions are needed to:
@@ -30,7 +35,7 @@ jobs:
           # Example of passing in Docker `--secret`
           build-secrets: |
             github-token=${{ secrets.token || github.token }}
-          # Build images from scratch on `main`. Ensures system packages have latest security fixes.
+          # Build images from scratch on "main". Ensures that caching doesn't result in using insecure system packages.
           from-scratch: ${{ github.ref == 'refs/heads/main' }}
 ```
 
