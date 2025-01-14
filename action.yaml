@@ -69,7 +69,7 @@ runs:
           type=raw,prefix=branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
       env:
         # https://github.com/docker/metadata-action/issues/206
-        DOCKER_METADATA_PR_HEAD_SHA: "true"
+        # DOCKER_METADATA_PR_HEAD_SHA: "true"
     # Use separate cache images to avoid bloating final images
     # https://docs.docker.com/build/cache/backends/registry/
     - name: Docker cache-from
@@ -85,7 +85,7 @@ runs:
           type=raw,prefix=cache-sha-,value=${{ github.event.pull_request.base.sha }},enable=${{ github.event_name == 'pull_request' }}
       env:
         # https://github.com/docker/metadata-action/issues/206
-        DOCKER_METADATA_PR_HEAD_SHA: "true"
+        # DOCKER_METADATA_PR_HEAD_SHA: "true"
     - name: Docker cache-to
       id: cache-to
       uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5.5.1
@@ -97,7 +97,7 @@ runs:
           type=raw,prefix=cache-branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
       env:
         # https://github.com/docker/metadata-action/issues/206
-        DOCKER_METADATA_PR_HEAD_SHA: "true"
+        # DOCKER_METADATA_PR_HEAD_SHA: "true"
     - name: Docker cache metadata
       id: cache
       shell: bash
