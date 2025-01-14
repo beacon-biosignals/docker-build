@@ -81,6 +81,7 @@ runs:
         DOCKER_METADATA_PR_HEAD_SHA: "true"
     - name: Docker cache-to
       id: cache-to
+      if: ${{ inputs.push == 'true' }}
       uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5.5.1
       with:
         images: |
