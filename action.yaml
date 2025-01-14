@@ -105,6 +105,11 @@ runs:
       env:
         # https://github.com/docker/metadata-action/issues/206
         DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit-sha.outputs.is-pr-head-sha }}
+    # Remove environmental variables set by `docker/metadata-action`:
+    # https://github.com/docker/metadata-action?tab=readme-ov-file#outputs
+    - name: Unset metadata-action environment variables
+      shell: bash
+      run: sed -i "/^DOCKER_METADATA_OUTPUT_/d" "$GITHUB_ENV"
     - name: Docker cache metadata
       id: cache
       shell: bash
