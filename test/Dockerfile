@@ -10,6 +10,9 @@ FROM debian:$DEBIAN_VERSION
 # Reduces output from `apt-get`
 ENV DEBIAN_FRONTEND="noninteractive"
 
+# Used to validate Docker layer caching
+RUN date --utc --iso-8601=seconds >/etc/layer-created-at
+
 # Configure `apt-get` to keep downloaded packages. Needed for using `--mount=type=cache` with `apt-get`
 # https://docs.docker.com/engine/reference/python-deps/#example-cache-apt-packages
 RUN rm -f /etc/apt/apt.conf.d/docker-clean && \

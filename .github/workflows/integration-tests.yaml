@@ -5,10 +5,14 @@ on:
     paths:
       - "action.yaml"
       - ".github/workflows/integration-tests.yaml"
+  push:
+    paths:
+      - "action.yaml"
+      - ".github/workflows/integration-tests.yaml"
 
 jobs:
   test:
-    name: Test ${{ matrix.commit.title }}
+    name: Test ${{ matrix.test.title }}
     # These permissions are needed to:
     # - Checkout the repo
     permissions:
@@ -18,15 +22,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        commit:
+        test:
           - title: Merge Commit
-            sha: ${{ github.sha }}
+            commit-sha: ${{ github.sha }}
+            from-scratch: true
           - title: Head Commit
-            sha: ${{ github.event.pull_request.head.sha }}
+            commit-sha: ${{ github.event.pull_request.head.sha }}
     steps:
+      - name: Job started at
+        id: job-started
+        run: |
+          job_started_at="$(date --utc --iso-8601=seconds)"
+          echo "at=$job_started_at" | tee -a "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.commit.sha }}
+          ref: ${{ matrix.test.commit-sha }}
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
@@ -40,6 +50,7 @@ jobs:
           context: test
           build-args: |
             DEBIAN_VERSION=12.9
+          from-scratch: ${{ matrix.test.from-scratch || 'false' }}
       - name: Validate image works
         run: |
           docker pull "${{ steps.build.outputs.image }}"
@@ -50,9 +61,19 @@ jobs:
           fi
           debian_version="$(docker run --entrypoint=/bin/cat "${{ steps.build.outputs.image }}" /etc/debian_version)"
           [[ "$debian_version" == "12.9" ]] || exit 2
+      - name: Validate layer caching
+        run: |
+          layer_created_at="$(docker run --entrypoint=/bin/cat "${{ steps.build.outputs.image }}" /etc/layer-created-at)"
+          if [[ "$from_scratch" == "true" ]]; then
+              [[ "$(date -d "$layer_created_at" +%s)" -gt "$(date -d "$job_started_at" +%s)" ]] || exit 1
+          else
+              [[ "$(date -d "$layer_created_at" +%s)" -lt "$(date -d "$job_started_at" +%s)" ]] || exit 1
+          fi
+        env:
+          job_started_at: ${{ steps.job-started.outputs.at }}
       - name: Validate cache images
         run: |
-          docker manifest inspect "${{ steps.build.outputs.image-repository }}:cache-sha-${{ matrix.commit.sha }}"
+          docker manifest inspect "${{ steps.build.outputs.image-repository }}:cache-sha-${{ matrix.test.commit-sha }}"
           docker manifest inspect "${{ steps.build.outputs.image-repository }}:cache-branch-${branch//[^[:alnum:]]/-}"
         env:
           branch: ${{ github.head_ref || (github.ref_type == 'branch' && github.ref_name) }}
@@ -60,7 +81,7 @@ jobs:
         run: |
           set -x
           json="$(docker manifest inspect "${{ steps.build.outputs.image }}")"
-          [[ "$(jq -r '.annotations."org.opencontainers.image.revision"' <<<"$json")" == "${{ matrix.commit.sha }}" ]] || exit 1
+          [[ "$(jq -r '.annotations."org.opencontainers.image.revision"' <<<"$json")" == "${{ matrix.test.commit-sha }}" ]] || exit 1
 
   cleanup:
     name: Cleanup
@@ -70,6 +91,6 @@ jobs:
       - uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4  # v1.0.16
         with:
           package: temporary/whalesay
-          older-than: 30 minutes
+          older-than: 1 day
           keep-n-tagged: 0
           exclude-tags: branch-main,cache-branch-main
