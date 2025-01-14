@@ -4,7 +4,7 @@
 # - https://hub.docker.com/r/docker/whalesay
 # - https://github.com/docker/whalesay
 
-ARG DEBIAN_VERSION
+ARG DEBIAN_VERSION=bullseye
 FROM debian:$DEBIAN_VERSION
 
 # Reduces output from `apt-get`
