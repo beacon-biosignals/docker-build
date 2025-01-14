@@ -48,6 +48,9 @@ jobs:
           fi
           debian_version="$(docker run --entrypoint=/bin/cat "${{ steps.build.outputs.image }}" /etc/debian_version)"
           [[ "$debian_version" == "12.9" ]] || exit 2
+      - name: Validate cache images
+        run: |
+          docker image inspect "${{ steps.build.outputs.image-repository }}:cache-sha-${{ matrix.commit.sha }}"
       - name: Validate annotations
         run: |
           set -x
