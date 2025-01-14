@@ -31,7 +31,7 @@ runs:
   using: composite
   steps:
     - shell: bash
-      run: jq <"${{ github.event.path }}"
+      run: jq <"$GITHUB_EVENT_PATH"
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@d70bba72b1f3fd22344832f00baa16ece964efeb # v3.3.0
       with:
