@@ -57,7 +57,7 @@ jobs:
 | `image-repository` | The Docker image repository where the image was pushed to. | `temporary/my-image` |
 | `digest`           | The built Docker image digest. | `sha256:37782d4e1c24d8f12047039a0d3512d1b6059e306a80d5b66a1d9ff60247a8cb` |
 | `tags`             | JSON list of tags associated with the built Docker image. | `branch-main`, `sha-152cb14` |
-| `commit-sha`       | The Git commit SHA used to build the imag. | `152cb14643b50529b229930d6124e6bbef48668d` |
+| `commit-sha`       | The Git commit SHA used to build the image. | `152cb14643b50529b229930d6124e6bbef48668d` |
 
 ## Permissions
 

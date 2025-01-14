@@ -6,26 +6,35 @@ branding:
   icon: layers
 inputs:
   image-repository:
+    description: The Docker image repository to push the build image and cached layers.
     required: true
   context:
+    description: The Docker build context directory.
     default: "."
   build-args:
+    description: List of build-time variables.
     required: false
   build-secrets:
+    description: List of secrets to expose to the build.
     required: false
   from-scratch:
-    description: Do not read from the cache when building the image
+    description: Do not read from the cache when building the image.
     default: "false"
 outputs:
   image:
+    description: Reference to the build image including the digest.
     value: ${{ inputs.image-repository }}@${{ steps.build-push.outputs.digest }}
   image-repository:
+    description: The Docker image repository where the image was pushed to.
     value: ${{ inputs.image-repository }}
   digest:
+    description: The built Docker image digest.
     value: ${{ steps.build-push.outputs.digest }}
   tags:
+    description: JSON list of tags associated with the built Docker image.
     value: ${{ steps.tags.outputs.json }}
   commit-sha:
+    description: The Git commit SHA used to build the image.
     value: ${{ github.event.pull_request.head.sha || github.sha }}
 runs:
   using: composite
