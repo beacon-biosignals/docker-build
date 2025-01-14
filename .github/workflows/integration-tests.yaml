@@ -71,4 +71,3 @@ jobs:
         with:
           package: temporary/whalesay
           older-than: 30 minutes
-          dry-run: true
