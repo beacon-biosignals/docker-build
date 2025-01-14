@@ -63,17 +63,25 @@ jobs:
           fi
           debian_version="$(docker run --entrypoint=/bin/cat "${{ steps.build.outputs.image }}" /etc/debian_version)"
           [[ "$debian_version" == "12.9" ]] || exit 2
-      - name: Validate layer caching
+      - name: Layer created at
+        id: layer-created
         run: |
-          set -x
           layer_created_at="$(docker run --entrypoint=/bin/cat "${{ steps.build.outputs.image }}" /etc/layer-created-at)"
-          if [[ "$from_scratch" == "true" ]]; then
-              [[ "$(date -d "$layer_created_at" +%s)" -gt "$(date -d "$job_started_at" +%s)" ]] || exit 1
-          else
-              [[ "$(date -d "$layer_created_at" +%s)" -lt "$(date -d "$job_started_at" +%s)" ]] || exit 1
-          fi
+          echo "at=$layer_created_at" | tee -a "$GITHUB_OUTPUT"
+      - name: Validate layer caching
+        if: ${{ matrix.test.from-scratch == 'false' }}
+        run: |
+          [[ "$(date -d "$layer_created_at" +%s)" -lt "$(date -d "$job_started_at" +%s)" ]] || exit 1
         env:
           job_started_at: ${{ steps.job-started.outputs.at }}
+          layer_created_at: ${{ steps.layer-created.outputs.at }}
+      - name: Validate no layer caching
+        if: ${{ matrix.test.from-scratch == 'true' }}
+        run: |
+          [[ "$(date -d "$layer_created_at" +%s)" -gt "$(date -d "$job_started_at" +%s)" ]] || exit 1
+        env:
+          job_started_at: ${{ steps.job-started.outputs.at }}
+          layer_created_at: ${{ steps.layer-created.outputs.at }
       - name: Validate cache images
         run: |
           docker manifest inspect "${{ steps.build.outputs.image-repository }}:cache-sha-${{ matrix.test.commit-sha }}"
