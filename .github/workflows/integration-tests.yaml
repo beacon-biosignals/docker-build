@@ -69,14 +69,14 @@ jobs:
           layer_created_at="$(docker run --entrypoint=/bin/cat "${{ steps.build.outputs.image }}" /etc/layer-created-at)"
           echo "at=$layer_created_at" | tee -a "$GITHUB_OUTPUT"
       - name: Validate layer caching
-        if: ${{ matrix.test.from-scratch == 'false' }}
+        if: ${{ matrix.test.from-scratch == false }}
         run: |
           [[ "$(date -d "$layer_created_at" +%s)" -lt "$(date -d "$job_started_at" +%s)" ]] || exit 1
         env:
           job_started_at: ${{ steps.job-started.outputs.at }}
           layer_created_at: ${{ steps.layer-created.outputs.at }}
       - name: Validate no layer caching
-        if: ${{ matrix.test.from-scratch == 'true' }}
+        if: ${{ matrix.test.from-scratch == true }}
         run: |
           [[ "$(date -d "$layer_created_at" +%s)" -gt "$(date -d "$job_started_at" +%s)" ]] || exit 1
         env:
