@@ -109,7 +109,10 @@ runs:
     # https://github.com/docker/metadata-action?tab=readme-ov-file#outputs
     - name: Unset metadata-action environment variables
       shell: bash
-      run: sed -i "/^DOCKER_METADATA_OUTPUT_/d" "$GITHUB_ENV"
+      run: |
+        echo "$GITHUB_ENV"
+        sed -i '/^DOCKER_METADATA_OUTPUT_/d' "$GITHUB_ENV"
+        cat "$GITHUB_ENV"
     - name: Docker cache metadata
       id: cache
       shell: bash
