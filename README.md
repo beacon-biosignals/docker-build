@@ -13,6 +13,8 @@ We recommend utilizing a separate image repositories for deployment and producti
 ---
 jobs:
   example:
+    # These permissions are needed to:
+    # - Get the workflow run: https://github.com/beacon-biosignals/docker-build#permissions
     permissions: {}
     runs-on: ubuntu-latest
     steps:
@@ -54,4 +56,9 @@ jobs:
 
 ## Permissions
 
-No [job permissions](https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs) are required to run this action.
+The follow [job permissions](https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs) are required to run this action:
+
+```yaml
+permissions:
+  packages: write  # Only required when using the GitHub Container registry: https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry
+```
