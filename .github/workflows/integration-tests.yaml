@@ -25,6 +25,20 @@ jobs:
       fail-fast: false
       matrix:
         test:
+          # We need to avoid running concurrent tests using the same commit SHA as
+          # otherwise we could see tests pass when one of them doesn't say output
+          # the cache layers. We could address this in two ways in the future if this
+          # becomes limiting:
+          #
+          # 1. Make use of separate image repositories for each test. This allows each
+          #    test to run in parallel without the potential for conflicts.
+          # 2. Use job concurrency and `max-parallel` for matrix jobs to run jobs
+          #    sequentially with cleanup in between. May be rather slow.
+          #
+          # I also considered revising the action to avoid pushing images entirely.
+          # Doing this may be challenging in otherways as pushing the image is a
+          # requirement for getting the digests in some contexts:
+          # https://github.com/docker/build-push-action/issues/906#issuecomment-1674567311
           - title: Merge Commit
             commit-sha: ${{ github.sha }}
             from-scratch: true
