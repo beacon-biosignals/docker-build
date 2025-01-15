@@ -55,12 +55,8 @@ runs:
             "${{ github.event.pull_request.head.sha }}")
                 is_pr_head_sha=true
                 ;;
-            "${{ github.sha }}")
-                is_pr_head_sha=false
-                ;;
             *)
-                echo "Context uses unexpected commit SHA" >&2
-                exit 1
+                is_pr_head_sha=false
                 ;;
         esac
         echo "is-pr-head-sha=${is_pr_head_sha}" | tee -a "$GITHUB_OUTPUT"
