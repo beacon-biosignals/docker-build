@@ -50,8 +50,20 @@ runs:
         # Determine commit SHA
         head="$(git rev-parse HEAD)"
         echo "head=$head" | tee -a "$GITHUB_OUTPUT"
-        echo "pr.head.sha=${{ github.event.pull_request.head.sha }}"
-        echo "github.sha=${{ github.sha }}"
+
+        case "$head" in
+            "${{ github.event.pull_request.head.sha }}")
+                is_pr_head_sha=true
+                ;;
+            "${{ github.sha }}")
+                is_pr_head_sha=false
+                ;;
+            *)
+                echo "Context uses unexpected commit SHA" >&2
+                exit 1
+                ;;
+        esac
+        echo "is-pr-head-sha=${is_pr_head_sha}" | tee -a "$GITHUB_OUTPUT"
     # Optional branch name (e.g. "main") for workflows triggered by `pull_request` or `push` events.
     - name: Branch
       id: branch
@@ -65,13 +77,15 @@ runs:
       id: metadata
       uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5.5.1
       with:
-        context: git
         images: |
           ${{ inputs.image-repository }}
         tags: |
           type=sha,prefix=sha-
           type=ref,prefix=pr-,event=pr
           type=raw,prefix=branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
+      env:
+        # https://github.com/docker/metadata-action/issues/206
+        DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit-sha.outputs.is-pr-head-sha }}
     # Use separate cache images to avoid bloating final images
     # https://docs.docker.com/build/cache/backends/registry/
     - name: Docker cache-from
@@ -79,23 +93,27 @@ runs:
       if: ${{ inputs.from-scratch != 'true' }}
       uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5.5.1
       with:
-        context: git
         images: |
           ${{ inputs.image-repository }}
         tags: |
           type=sha,prefix=cache-sha-,format=long
           type=raw,prefix=cache-branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
           type=raw,prefix=cache-sha-,value=${{ github.event.pull_request.base.sha }},enable=${{ github.event_name == 'pull_request' }}
+      env:
+        # https://github.com/docker/metadata-action/issues/206
+        DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit-sha.outputs.is-pr-head-sha }}
     - name: Docker cache-to
       id: cache-to
       uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5.5.1
       with:
-        context: git
         images: |
           ${{ inputs.image-repository }}
         tags: |
           type=sha,prefix=cache-sha-,format=long
           type=raw,prefix=cache-branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
+      env:
+        # https://github.com/docker/metadata-action/issues/206
+        DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit-sha.outputs.is-pr-head-sha }}
     # Disable environmental variables set by `docker/metadata-action`:
     # https://github.com/docker/metadata-action#outputs
     # https://github.com/docker/metadata-action/issues/490
