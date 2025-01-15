@@ -109,6 +109,13 @@ jobs:
           set -x
           json="$(docker manifest inspect "${{ steps.build.outputs.image }}")"
           [[ "$(jq -r '.annotations."org.opencontainers.image.revision"' <<<"$json")" == "${{ matrix.test.commit-sha }}" ]] || exit 1
+      - name: Validate docker/metadata-output environment variables are overwritten
+        shell: bash
+        run: |
+          if [[ "$(printenv | grep '^DOCKER_METADATA_OUTPUT_' | grep '[^=]$' | wc -l)" -ne 0 ]]; then
+              printenv | grep '^DOCKER_METADATA_OUTPUT_'
+              exit 1
+          fi
 
   cleanup:
     name: Cleanup

@@ -67,7 +67,7 @@ runs:
         branch: ${{ github.head_ref || (github.ref_type == 'branch' && github.ref_name) }}
     - name: Docker metadata
       id: metadata
-      uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5.5.1
+      uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
       with:
         images: |
           ${{ inputs.image-repository }}
@@ -80,7 +80,7 @@ runs:
     - name: Docker cache-from
       id: cache-from
       if: ${{ inputs.from-scratch != 'true' }}
-      uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5.5.1
+      uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
       with:
         images: |
           ${{ inputs.image-repository }}
@@ -90,7 +90,7 @@ runs:
           type=raw,prefix=cache-sha-,value=${{ github.event.pull_request.base.sha }},enable=${{ github.event_name == 'pull_request' }}
     - name: Docker cache-to
       id: cache-to
-      uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5.5.1
+      uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
       with:
         images: |
           ${{ inputs.image-repository }}
@@ -111,7 +111,6 @@ runs:
         echo "DOCKER_METADATA_OUTPUT_BAKE_FILE_TAGS=" >>"$GITHUB_ENV"
         echo "DOCKER_METADATA_OUTPUT_BAKE_FILE_LABELS=" >>"$GITHUB_ENV"
         echo "DOCKER_METADATA_OUTPUT_BAKE_FILE_ANNOTATIONS=" >>"$GITHUB_ENV"
-        echo "DOCKER_METADATA_OUTPUT_BAKE_FILE=" >>"$GITHUB_ENV"
     - name: Docker cache metadata
       id: cache
       shell: bash
