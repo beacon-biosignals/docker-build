@@ -44,8 +44,6 @@ jobs:
             from-scratch: true
           - title: Head Commit
             commit-sha: ${{ github.event.pull_request.head.sha }}
-          - title: Fixed Commit
-            commit-sha: 5921a42f27af154dec1372cb1e1d1fe11c701437
     steps:
       - name: Job started at
         id: job-started
