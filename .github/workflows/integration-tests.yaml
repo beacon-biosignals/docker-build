@@ -110,7 +110,7 @@ jobs:
       - name: Validate docker/metadata-output environment variables are overwritten
         shell: bash
         run: |
-          if [[ "$(printenv | grep '^DOCKER_METADATA_OUTPUT_' | grep '[^=]$' | wc -l)" -ne 0 ]]; then
+          if [[ "$(printenv | grep '^DOCKER_METADATA_OUTPUT_' | grep -c '[^=]$')" -ne 0 ]]; then
               printenv | grep '^DOCKER_METADATA_OUTPUT_'
               exit 1
           fi
