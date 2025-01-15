@@ -1,4 +1,4 @@
-a---
+---
 name: Docker Build
 description: Build a Docker image while utilize layer caching from the image repository.
 branding:
