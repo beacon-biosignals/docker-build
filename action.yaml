@@ -51,6 +51,13 @@ runs:
         sha="$(git rev-parse HEAD)"
         echo "sha=$sha" | tee -a "$GITHUB_OUTPUT"
 
+        # When building the Docker image we'll generate tags and annotations which include
+        # the commit SHA. Due to limitations with `docker/metadata-action` it's rather
+        # difficult to get this working for an arbitrary commit. For now we'll limit this
+        # action to only either using the PR merge commit (default when checking out) or
+        # the PR/branch/tag head. Updating this action to support arbitrary actions can
+        # be made into a feature release.
+        # https://github.com/beacon-biosignals/docker-build/issues/2
         case "$sha" in
             "${{ github.event.pull_request.head.sha }}")
                 is_pr_head_sha=true
