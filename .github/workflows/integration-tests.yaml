@@ -1,10 +1,10 @@
 ---
 name: Integration Tests
 on:
-  pull_request:
-    paths:
-      - "action.yaml"
-      - ".github/workflows/integration-tests.yaml"
+  # pull_request:
+  #   paths:
+  #     - "action.yaml"
+  #     - ".github/workflows/integration-tests.yaml"
   push:
     # branches:
     #   - main
