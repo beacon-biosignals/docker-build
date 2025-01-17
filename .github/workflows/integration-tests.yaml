@@ -6,8 +6,8 @@ on:
       - "action.yaml"
       - ".github/workflows/integration-tests.yaml"
   push:
-    branches:
-      - main
+    # branches:
+    #   - main
     paths:
       - "action.yaml"
       - ".github/workflows/integration-tests.yaml"
