@@ -1,13 +1,11 @@
 ---
 name: Integration Tests
 on:
-  # pull_request:
-  #   paths:
-  #     - "action.yaml"
-  #     - ".github/workflows/integration-tests.yaml"
+  pull_request:
+    paths:
+      - "action.yaml"
+      - ".github/workflows/integration-tests.yaml"
   push:
-    # branches:
-    #   - main
     paths:
       - "action.yaml"
       - ".github/workflows/integration-tests.yaml"
@@ -39,15 +37,9 @@ jobs:
           # Doing this may be challenging in otherways as pushing the image is a
           # requirement for getting the digests in some contexts:
           # https://github.com/docker/build-push-action/issues/906#issuecomment-1674567311
-          - title: ${{ github.event_name == 'pull_request' && 'PR Merge Commit' || 'Head Commit' }}
+          - title: ${{ github.event_name == 'pull_request' && 'Merge Commit' || 'Head Commit' }}
             commit-sha: ${{ github.sha }}
-            from-scratch: true
-          - title: PR Head Commit
-            commit-sha: ${{ github.event.pull_request.head.sha }}
-        exclude:
-          # Drop this test for non-PR events where the expression is empty
-          - title: PR Head Commit
-            commit-sha: ""
+            from-scratch: ${{ github.event_name != 'pull_request' }}
     steps:
       - name: Job started at
         id: job-started
