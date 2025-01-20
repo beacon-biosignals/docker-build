@@ -169,7 +169,7 @@ jobs:
           fi
 
   cleanup:
-    name: Cleanup
+    name: Cleanup (${{ matrix.cleanup.package }})
     needs:
       - filter-matrix
       - test
