@@ -45,8 +45,8 @@ jobs:
 |:---------------------|:------------|:---------|:--------|
 | `image-repository`   | The Docker image repository to push the build image and cached layers. | Yes | `temporary/my-image` |
 | `context`            | The Docker build context directory. Defaults to `.`. | No | `./my-image` |
-| `build-args`         | List of [build-time variables](https://docs.docker.com/reference/cli/docker/buildx/build/#build-arg). | No | <pre><code>HTTP_PROXY=http://10.20.30.2:1234&#10;FTP_PROXY=http://40.50.60.5:4567</code></pre> |
-| `build-secrets`      | List of [secrets](https://docs.docker.com/engine/reference/commandline/buildx_build/#secret) to expose to the build. | No | `GIT_AUTH_TOKEN=mytoken` |
+| `build-args`         | List of [build-time variables](https://docs.docker.com/reference/cli/docker/buildx/build/#build-arg). | No | <pre><code>HTTP_PROXY=http://10.20.30.2:1234 &#10;FTP_PROXY=http://40.50.60.5:4567</code></pre> |
+| `build-secrets`      | List of [secrets](https://docs.docker.com/engine/reference/commandline/buildx_build/#secret) to expose to the build. | No | <pre><code>GIT_AUTH_TOKEN=mytoken</code></pre> |
 | `from-scratch`       | Do not use cache when building the image. Defaults to `false`. | No | `false` |
 
 ## Outputs
