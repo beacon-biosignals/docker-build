@@ -21,7 +21,9 @@ jobs:
     outputs:
       json: ${{ steps.filter.outputs.json }}
     steps:
-      - run: |
+      - name: Filter Matrix
+        id: filter
+        run: |
           # Remove any entries with keys containing `null` values.
           output_yaml="$(yq 'map(select(to_entries | map(.value != null) | all))' <<<"${matrix:?}")"
 
@@ -65,11 +67,11 @@ jobs:
             - title: ${{ github.event_name == 'pull_request' && 'Merge Commit From Scratch' || '' }}
               package: temporary/whalesay-from-scratch
               commit-sha: ${{ github.sha }}
-              from-scratch: false
+              from-scratch: true
             - title: Head Commit From Scratch
               package: temporary/whalesay-from-scratch
               commit-sha: ${{ github.event.pull_request.head.sha || github.sha }}
-              from-scratch: false
+              from-scratch: true
 
   test:
     name: Test ${{ matrix.test.title }}
