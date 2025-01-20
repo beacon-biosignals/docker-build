@@ -1,0 +1,18 @@
+---
+# https://yamllint.readthedocs.io/en/stable/integration.html#integration-with-github-actions
+name: YAML
+on:
+  pull_request:
+    paths:
+      - "**/*.yaml"
+      - "**/*.yml"
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install yamllint
+        run: pip install yamllint
+      - name: Lint YAML files
+        run: yamllint . --format=github

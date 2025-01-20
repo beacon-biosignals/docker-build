@@ -1,0 +1,12 @@
+# https://editorconfig.org/
+
+# https://manpages.debian.org/testing/shfmt/shfmt.1.en.html#EXAMPLES
+[*.sh]
+indent_style = space
+indent_size = 4
+shell_variant      = bash  # --language-variant
+binary_next_line   = false
+switch_case_indent = true  # --case-indent
+space_redirects    = false
+keep_padding       = false
+function_next_line = false # --func-next-line

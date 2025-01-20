@@ -1,0 +1,195 @@
+---
+name: Docker Build
+description: Build a Docker image while utilize layer caching from the image repository.
+branding:
+  color: blue
+  icon: layers
+inputs:
+  image-repository:
+    description: The Docker image repository to push the build image and cached layers.
+    required: true
+  context:
+    description: The Docker build context directory.
+    default: "."
+  build-args:
+    description: List of build-time variables.
+    required: false
+  build-secrets:
+    description: List of secrets to expose to the build.
+    required: false
+  from-scratch:
+    description: Do not read from the cache when building the image.
+    default: "false"
+outputs:
+  image:
+    description: Reference to the build image including the digest.
+    value: ${{ inputs.image-repository }}@${{ steps.build-push.outputs.digest }}
+  image-repository:
+    description: The Docker image repository where the image was pushed to.
+    value: ${{ inputs.image-repository }}
+  digest:
+    description: The built Docker image digest.
+    value: ${{ steps.build-push.outputs.digest }}
+  tags:
+    description: JSON list of tags associated with the built Docker image.
+    value: ${{ steps.tags.outputs.json }}
+  commit-sha:
+    description: The Git commit SHA used to build the image.
+    value: ${{ steps.commit.outputs.sha }}
+runs:
+  using: composite
+  steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@d70bba72b1f3fd22344832f00baa16ece964efeb # v3.3.0
+      with:
+        driver: docker-container
+    - name: Determine commit SHA
+      id: commit
+      shell: bash
+      run: |
+        # Determine commit SHA
+        sha="$(git rev-parse HEAD)"
+        echo "sha=$sha" | tee -a "$GITHUB_OUTPUT"
+
+        # When building the Docker image we'll generate tags and annotations which include
+        # the commit SHA. Due to limitations with `docker/metadata-action` it's rather
+        # difficult to get this working for an arbitrary commit. For now we'll limit this
+        # action to only either using the PR merge commit (default when checking out) or
+        # the PR/branch/tag head. Updating this action to support arbitrary actions can
+        # be made into a feature release.
+        # https://github.com/beacon-biosignals/docker-build/issues/2
+        case "$sha" in
+            "${{ github.event.pull_request.head.sha }}")
+                is_pr_head_sha=true
+                ;;
+            "${{ github.sha }}")
+                is_pr_head_sha=false
+                ;;
+            *)
+                echo "Context uses unexpected commit SHA" >&2
+                exit 1
+                ;;
+        esac
+        echo "is-pr-head-sha=${is_pr_head_sha}" | tee -a "$GITHUB_OUTPUT"
+    # Optional branch name (e.g. "main") for workflows triggered by `pull_request` or `push` events.
+    - name: Branch
+      id: branch
+      shell: bash
+      run: |
+        # Branch
+        echo "name=${branch}" | tee -a "$GITHUB_OUTPUT"
+      env:
+        branch: ${{ github.head_ref || (github.ref_type == 'branch' && github.ref_name) }}
+    - name: Docker metadata
+      id: metadata
+      uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
+      with:
+        images: |
+          ${{ inputs.image-repository }}
+        tags: |
+          type=sha,prefix=sha-,format=short
+          type=ref,prefix=pr-,event=pr
+          type=raw,prefix=branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
+      env:
+        # https://github.com/docker/metadata-action/issues/206
+        DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit.outputs.is-pr-head-sha }}
+    # Use separate cache images to avoid bloating final images
+    # https://docs.docker.com/build/cache/backends/registry/
+    - name: Docker cache-from
+      id: cache-from
+      if: ${{ inputs.from-scratch != 'true' }}
+      uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
+      with:
+        images: |
+          ${{ inputs.image-repository }}
+        tags: |
+          type=sha,prefix=cache-sha-,format=long
+          type=raw,prefix=cache-branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
+          type=raw,prefix=cache-sha-,value=${{ github.event.pull_request.base.sha }},enable=${{ github.event_name == 'pull_request' }}
+      env:
+        # https://github.com/docker/metadata-action/issues/206
+        DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit.outputs.is-pr-head-sha }}
+    - name: Docker cache-to
+      id: cache-to
+      uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
+      with:
+        images: |
+          ${{ inputs.image-repository }}
+        tags: |
+          type=sha,prefix=cache-sha-,format=long
+          type=raw,prefix=cache-branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
+      env:
+        # https://github.com/docker/metadata-action/issues/206
+        DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit.outputs.is-pr-head-sha }}
+    # Disable environmental variables set by `docker/metadata-action`:
+    # https://github.com/docker/metadata-action#outputs
+    # https://github.com/docker/metadata-action/issues/490
+    - name: Unset metadata-action environment variables
+      shell: bash
+      run: |
+        echo "DOCKER_METADATA_OUTPUT_VERSION=" >>"$GITHUB_ENV"
+        echo "DOCKER_METADATA_OUTPUT_TAGS=" >>"$GITHUB_ENV"
+        echo "DOCKER_METADATA_OUTPUT_LABELS=" >>"$GITHUB_ENV"
+        echo "DOCKER_METADATA_OUTPUT_ANNOTATIONS=" >>"$GITHUB_ENV"
+        echo "DOCKER_METADATA_OUTPUT_JSON=" >>"$GITHUB_ENV"
+        echo "DOCKER_METADATA_OUTPUT_BAKE_FILE_TAGS=" >>"$GITHUB_ENV"
+        echo "DOCKER_METADATA_OUTPUT_BAKE_FILE_LABELS=" >>"$GITHUB_ENV"
+        echo "DOCKER_METADATA_OUTPUT_BAKE_FILE_ANNOTATIONS=" >>"$GITHUB_ENV"
+        echo "DOCKER_METADATA_OUTPUT_BAKE_FILE=" >>"$GITHUB_ENV"
+    - name: Docker cache metadata
+      id: cache
+      shell: bash
+      run: |
+        # Docker cache metadata
+        # Specify our multiline output using GH action flavored heredocs
+        # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
+        {
+            echo "from-tags<<EOF"
+            sed -r 's/(.+)/type=registry,ref=\1/g' <<<"${from_tags}"
+            echo "EOF"
+
+            # Specify `image-manifest=true` to create an OCI-compatible version of the remote cache for ECR:
+            # https://aws.amazon.com/blogs/containers/announcing-remote-cache-support-in-amazon-ecr-for-buildkit-clients/
+            echo "to-tags<<EOF"
+            sed -r 's/(.+)/type=registry,ref=\1,mode=max,image-manifest=true,oci-mediatypes=true/g' <<<"${to_tags}"
+            echo "EOF"
+        } | tee -a "$GITHUB_OUTPUT"
+      env:
+        from_tags: ${{ steps.cache-from.outputs.tags }}
+        to_tags: ${{ steps.cache-to.outputs.tags }}
+    - name: Build and Push
+      id: build-push
+      uses: docker/build-push-action@2cdde995de11925a030ce8070c3d77a52ffcf1c0 # v5.3.0
+      with:
+        context: ${{ inputs.context }}
+        build-args: ${{ inputs.build-args }}
+        secrets: ${{ inputs.build-secrets }}
+        cache-from: ${{ steps.cache.outputs.from-tags }}
+        cache-to: ${{ steps.cache.outputs.to-tags }}
+        tags: ${{ steps.metadata.outputs.tags }}
+        # org.opencontainers.image.revision
+        # https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+        annotations: |
+          ${{ steps.metadata.outputs.annotations }}
+          gha.run-id=${{ github.run_id }}
+          gha.run-attempt=${{ github.run_attempt }}
+        # Required to be true so we can consistently get access to the `digest`:
+        # https://github.com/docker/build-push-action/issues/906#issuecomment-1674567311
+        push: true
+        provenance: false  # Prevent pushing a docker manifest
+    - name: Inspect Docker Manifest
+      shell: bash
+      run: |
+        # Inspect Docker Manifest
+        docker manifest inspect "${image:?}"
+      env:
+        image: ${{ inputs.image-repository }}@${{ steps.build-push.outputs.digest }}
+    - name: Tags as JSON
+      id: tags
+      shell: bash
+      run: |
+        # Tags as JSON
+        tags_json="$(jq -cRs 'split("\n") | map(scan("(?<=:)[^:]+$"))' <<<"${tags:?}")"
+        echo "json=${tags_json}" | tee -a "$GITHUB_OUTPUT"
+      env:
+        tags: ${{ steps.metadata.outputs.tags }}

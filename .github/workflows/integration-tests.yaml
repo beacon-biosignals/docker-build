@@ -1,0 +1,196 @@
+---
+name: Integration Tests
+on:
+  pull_request:
+    paths:
+      - "action.yaml"
+      - ".github/workflows/integration-tests.yaml"
+  push:
+    paths:
+      - "action.yaml"
+      - ".github/workflows/integration-tests.yaml"
+
+concurrency:
+  group: integration-tests-${{ github.event_name == 'pull_request' && 'pr' || 'push' }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  filter-matrix:
+    name: Filter Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      test-json: ${{ steps.filter.outputs.test-json }}
+      cleanup-json: ${{ steps.filter.outputs.cleanup-json }}
+    steps:
+      - name: Filter Matrix
+        id: filter
+        shell: bash
+        run: |
+          # Remove any entries with keys containing `null` values.
+          test_yaml="$(yq 'map(select(to_entries | map(.value != null) | all))' <<<"${matrix:?}")"
+
+          # Validate we do not accidentally test against the same package and commit SHA.
+          yq -o=json <<<"$test_yaml" | jq -e '(map({package, "commit-sha"}) | unique | length) == length' || exit 1
+
+          # Automatically cleanup the `cache-sha-*` tags for the specific test commits.
+          cleanup_yaml="$(yq 'group_by(.package) | map({"package": .[0].package, "tags" : map(.commit-sha) | unique | map("cache-sha-" + .) | join(",")})' <<<"$test_yaml")"
+
+          # Output our multiline YAML document using GH action flavored heredoc
+          # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
+          {
+              echo "test-json<<EOF"
+              yq -o json <<<"$test_yaml"
+              echo "EOF"
+
+              echo "cleanup-json<<EOF"
+              yq -o json <<<"$cleanup_yaml"
+              echo "EOF"
+          } | tee -a "$GITHUB_OUTPUT"
+        env:
+          # We need to avoid running concurrent tests using the same commit SHA and
+          # writing to the same image-repository. If we do not then we could see false
+          # positive test results if one of them doesn't actually push cache layers. We
+          # address this problem by:
+          #
+          # 1. Ensuring tests which run in parallel either use separate image repositories
+          #    or different Git commit SHAs.
+          # 2. Utilizing concurrency groups to avoid having multiple instances of this
+          #    workflow run in parallel when triggered on the same commit SHA.
+          # 3. Deleting the `cache-sha-*` tags to ensure our running workflow produced
+          #    those images. Ideally, we'd delete these before the tests run but attempting
+          #    to delete images from non-existing packages causes failures so this works
+          #    well enough.
+          #
+          # I also considered revising the action to avoid pushing images entirely.
+          # Doing this may be challenging in otherways as pushing the image is a
+          # requirement for getting the digests in some contexts:
+          # https://github.com/docker/build-push-action/issues/906#issuecomment-1674567311
+          matrix: |
+            - title: ${{ github.event_name == 'pull_request' && 'Merge Commit' || '' }}
+              package : temporary/whalesay-pr
+              commit-sha: ${{ github.sha }}
+              from-scratch: false
+            - title: Head Commit
+              package: temporary/whalesay-${{ github.event_name == 'pull_request' && 'pr' || 'push' }}
+              commit-sha: ${{ github.event.pull_request.head.sha || github.sha }}
+              from-scratch: false
+            - title: ${{ github.event_name == 'pull_request' && 'Merge Commit From Scratch' || '' }}
+              package: temporary/whalesay-pr-from-scratch
+              commit-sha: ${{ github.sha }}
+              from-scratch: true
+            - title: Head Commit From Scratch
+              package: temporary/whalesay-${{ github.event_name == 'pull_request' && 'pr' || 'push' }}-from-scratch
+              commit-sha: ${{ github.event.pull_request.head.sha || github.sha }}
+              from-scratch: true
+
+  test:
+    name: Test ${{ matrix.test.title }}
+    needs: filter-matrix
+    # These permissions are needed to:
+    # - Checkout the repo
+    permissions:
+      contents: read
+      packages: write
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test: ${{ fromJSON(needs.filter-matrix.outputs.test-json) }}
+    steps:
+      - name: Job started at
+        id: job-started
+        run: |
+          job_started_at="$(date --utc --iso-8601=seconds)"
+          echo "at=$job_started_at" | tee -a "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.test.commit-sha }}
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - uses: ./
+        id: build
+        with:
+          image-repository: ghcr.io/beacon-biosignals/${{ matrix.test.package }}
+          context: test
+          build-args: |
+            DEBIAN_VERSION=12.9
+          from-scratch: ${{ matrix.test.from-scratch || 'false' }}
+      - name: Validate image works
+        run: |
+          docker pull "${{ steps.build.outputs.image }}"
+          output="$(docker run "${{ steps.build.outputs.image }}")"
+          if [[ "$(wc -l <<<"$output")" -lt 14 ]]; then
+              echo "$output"
+              exit 1
+          fi
+          debian_version="$(docker run --entrypoint=/bin/cat "${{ steps.build.outputs.image }}" /etc/debian_version)"
+          [[ "$debian_version" == "12.9" ]] || exit 2
+      - name: Layer created at
+        id: layer-created
+        run: |
+          layer_created_at="$(docker run --entrypoint=/bin/cat "${{ steps.build.outputs.image }}" /etc/layer-created-at)"
+          echo "at=$layer_created_at" | tee -a "$GITHUB_OUTPUT"
+      # Test will fail if this is the first time the image was build in the image-repository
+      - name: Validate layer caching
+        if: ${{ matrix.test.from-scratch == false }}
+        run: |
+          [[ "$(date -d "$layer_created_at" +%s)" -lt "$(date -d "$job_started_at" +%s)" ]] || exit 1
+        env:
+          job_started_at: ${{ steps.job-started.outputs.at }}
+          layer_created_at: ${{ steps.layer-created.outputs.at }}
+      - name: Validate no layer caching
+        if: ${{ matrix.test.from-scratch == true }}
+        run: |
+          [[ "$(date -d "$layer_created_at" +%s)" -gt "$(date -d "$job_started_at" +%s)" ]] || exit 1
+        env:
+          job_started_at: ${{ steps.job-started.outputs.at }}
+          layer_created_at: ${{ steps.layer-created.outputs.at }}
+      - name: Validate cache images
+        run: |
+          docker manifest inspect "${{ steps.build.outputs.image-repository }}:cache-sha-${{ matrix.test.commit-sha }}"
+
+          # Should only be skipped when workflow is triggered by a tag push
+          if [[ -n "$branch" ]]; then
+              docker manifest inspect "${{ steps.build.outputs.image-repository }}:cache-branch-${branch//[^[:alnum:]]/-}"
+          fi
+        env:
+          branch: ${{ github.head_ref || (github.ref_type == 'branch' && github.ref_name) }}
+      - name: Validate annotations
+        run: |
+          set -x
+          json="$(docker manifest inspect "${{ steps.build.outputs.image }}")"
+          [[ "$(jq -r '.annotations."org.opencontainers.image.revision"' <<<"$json")" == "${{ matrix.test.commit-sha }}" ]] || exit 1
+      - name: Validate docker/metadata-output environment variables are overwritten
+        shell: bash
+        run: |
+          if [[ "$(printenv | grep '^DOCKER_METADATA_OUTPUT_' | grep -c '[^=]$')" -ne 0 ]]; then
+              printenv | grep '^DOCKER_METADATA_OUTPUT_'
+              exit 1
+          fi
+
+  cleanup:
+    name: Cleanup (${{ matrix.cleanup.package }})
+    needs:
+      - filter-matrix
+      - test
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        cleanup: ${{ fromJSON(needs.filter-matrix.outputs.cleanup-json || '[]') }}
+    steps:
+      - uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4  # v1.0.16
+        with:
+          package: ${{ matrix.cleanup.package }}
+          delete-tags: ${{ matrix.cleanup.tags }}
+      - uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4  # v1.0.16
+        with:
+          package: ${{ matrix.cleanup.package }}
+          older-than: 1 day
+          keep-n-tagged: 0
+          exclude-tags: branch-main,cache-branch-main
