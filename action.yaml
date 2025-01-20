@@ -51,6 +51,9 @@ runs:
         sha="$(git rev-parse HEAD)"
         echo "sha=$sha" | tee -a "$GITHUB_OUTPUT"
 
+        prev_sha="$(git rev-parse HEAD^)"
+        echo "prev-sha=$prev_sha" | tee -a "$GITHUB_OUTPUT"
+
         # When building the Docker image we'll generate tags and annotations which include
         # the commit SHA. Due to limitations with `docker/metadata-action` it's rather
         # difficult to get this working for an arbitrary commit. For now we'll limit this
