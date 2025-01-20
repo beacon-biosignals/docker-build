@@ -152,7 +152,11 @@ jobs:
       - name: Validate cache images
         run: |
           docker manifest inspect "${{ steps.build.outputs.image-repository }}:cache-sha-${{ matrix.test.commit-sha }}"
-          docker manifest inspect "${{ steps.build.outputs.image-repository }}:cache-branch-${branch//[^[:alnum:]]/-}"
+
+          # Should only be skipped when workflow is triggered by a tag push
+          if [[ -n "$branch" ]]; then
+              docker manifest inspect "${{ steps.build.outputs.image-repository }}:cache-branch-${branch//[^[:alnum:]]/-}"
+          fi
         env:
           branch: ${{ github.head_ref || (github.ref_type == 'branch' && github.ref_name) }}
       - name: Validate annotations
