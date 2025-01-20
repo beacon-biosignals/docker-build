@@ -85,7 +85,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: ${{ needs.filter-matrix.outputs.json }}
+        test: ${{ fromJSON(needs.filter-matrix.outputs.json) }}
     steps:
       - name: Job started at
         id: job-started
@@ -171,7 +171,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: ${{ needs.filter-matrix.outputs.packages }}
+        package: ${{ fromJSON(needs.filter-matrix.outputs.packages) }}
     steps:
       - uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4  # v1.0.16
         with:
