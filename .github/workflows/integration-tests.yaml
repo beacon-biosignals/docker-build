@@ -24,10 +24,15 @@ jobs:
     steps:
       - name: Filter Matrix
         id: filter
+        shell: bash
         run: |
           # Remove any entries with keys containing `null` values.
           test_yaml="$(yq 'map(select(to_entries | map(.value != null) | all))' <<<"${matrix:?}")"
 
+          # Validate we do not accidentally test against the same package and commit SHA.
+          yq -o=json <<<"$output_yaml" | jq -e '(map({package, "commit-sha"}) | unique | length) == length' || exit 1
+
+          # Automatically cleanup the `cache-sha-*` tags for the specific test commits.
           cleanup_yaml="$(yq 'group_by(.package) | map({"package": .[0].package, "tags" : map(.commit-sha) | unique | map("cache-sha-" + .) | join(",")})' <<<"$test_yaml")"
 
           # Output our multiline YAML document using GH action flavored heredoc
