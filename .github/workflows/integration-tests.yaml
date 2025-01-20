@@ -30,7 +30,7 @@ jobs:
           test_yaml="$(yq 'map(select(to_entries | map(.value != null) | all))' <<<"${matrix:?}")"
 
           # Validate we do not accidentally test against the same package and commit SHA.
-          yq -o=json <<<"$output_yaml" | jq -e '(map({package, "commit-sha"}) | unique | length) == length' || exit 1
+          yq -o=json <<<"$test_yaml" | jq -e '(map({package, "commit-sha"}) | unique | length) == length' || exit 1
 
           # Automatically cleanup the `cache-sha-*` tags for the specific test commits.
           cleanup_yaml="$(yq 'group_by(.package) | map({"package": .[0].package, "tags" : map(.commit-sha) | unique | map("cache-sha-" + .) | join(",")})' <<<"$test_yaml")"
@@ -56,8 +56,10 @@ jobs:
           #    or different Git commit SHAs.
           # 2. Utilizing concurrency groups to avoid having multiple instances of this
           #    workflow run in parallel when triggered on the same commit SHA.
-          # 3. Deleting the `cache-sha-*` entry for the images we're about to build to
-          #    ensure those entries were produced by the running workflow.
+          # 3. Deleting the `cache-sha-*` tags to ensure our running workflow produced
+          #    those images. Ideally, we'd delete these before the tests run but attempting
+          #    to delete images from non-existing packages causes failures so this works
+          #    well enough.
           #
           # I also considered revising the action to avoid pushing images entirely.
           # Doing this may be challenging in otherways as pushing the image is a
