@@ -16,7 +16,8 @@ on:
 
 concurrency:
   group: integration-tests-${{ github.event_name == 'pull_request' && 'pr' || 'push' }}-${{ github.event.pull_request.head.sha || github.sha }}
-  cancel-in-progress: true
+  # Run all workflows on "main" and on tags
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   filter-matrix:
