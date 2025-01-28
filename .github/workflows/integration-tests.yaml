@@ -161,7 +161,7 @@ jobs:
 
           # Should only be skipped when workflow is triggered by a tag push
           if [[ -n "$branch" ]]; then
-              docker manifest inspect "${{ steps.build.outputs.image-repository }}:cache-branch-${branch//[^[:alnum:]]/-}"
+              docker manifest inspect "${{ steps.build.outputs.image-repository }}:cache-branch-${branch//[^a-zA-Z0-9\._\/]/-}"
           fi
         env:
           branch: ${{ github.head_ref || (github.ref_type == 'branch' && github.ref_name || '') }}
