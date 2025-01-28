@@ -7,12 +7,9 @@ on:
       - "test/**"
       - ".github/workflows/integration-tests.yaml"
   push:
+    # Always build images on `main` so future PRs have a cached image to work off of
     branches: ["main"]
     tags: ["*"]
-    paths:
-      - "action.yaml"
-      - "test/**"
-      - ".github/workflows/integration-tests.yaml"
 
 concurrency:
   group: integration-tests-${{ github.event_name == 'pull_request' && 'pr' || 'push' }}-${{ github.event.pull_request.head.sha || github.sha }}
@@ -161,7 +158,7 @@ jobs:
 
           # Should only be skipped when workflow is triggered by a tag push
           if [[ -n "$branch" ]]; then
-              docker manifest inspect "${{ steps.build.outputs.image-repository }}:cache-branch-${branch//[^[:alnum:]]/-}"
+              docker manifest inspect "${{ steps.build.outputs.image-repository }}:cache-branch-${branch//[^a-zA-Z0-9\._]/-}"
           fi
         env:
           branch: ${{ github.head_ref || (github.ref_type == 'branch' && github.ref_name || '') }}
