@@ -19,7 +19,7 @@ jobs:
       # https://github.com/rhysd/actionlint/blob/v1.7.6/docs/usage.md#reviewdog
       # https://github.com/reviewdog/reviewdog#filter-mode
       # No support for non-workflows yet: https://github.com/rhysd/actionlint/issues/46
-      - uses: reviewdog/action-actionlint@fafbcd6731647e01e0a960020fb00370382c46a7 # v1.62.0
+      - uses: reviewdog/action-actionlint@abd537417cf4991e1ba8e21a67b1119f4f53b8e0 # v1.64.1
         with:
           fail_level: error
           filter_mode: nofilter  # Post results on all results and not just changed files
