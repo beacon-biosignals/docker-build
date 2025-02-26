@@ -93,7 +93,7 @@ runs:
       env:
         # https://github.com/docker/metadata-action/issues/206
         DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit.outputs.is-pr-head-sha }}
-        DOCKER_METADATA_SET_OUTPUT_ENV: false
+        DOCKER_METADATA_SET_OUTPUT_ENV: "false"
     # Use separate cache images to avoid bloating final images
     # https://docs.docker.com/build/cache/backends/registry/
     - name: Docker cache-from
@@ -111,7 +111,7 @@ runs:
       env:
         # https://github.com/docker/metadata-action/issues/206
         DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit.outputs.is-pr-head-sha }}
-        DOCKER_METADATA_SET_OUTPUT_ENV: false
+        DOCKER_METADATA_SET_OUTPUT_ENV: "false"
     - name: Docker cache-to
       id: cache-to
       uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
@@ -124,7 +124,7 @@ runs:
       env:
         # https://github.com/docker/metadata-action/issues/206
         DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit.outputs.is-pr-head-sha }}
-        DOCKER_METADATA_SET_OUTPUT_ENV: false
+        DOCKER_METADATA_SET_OUTPUT_ENV: "false"
     - name: Docker cache metadata
       id: cache
       shell: bash
