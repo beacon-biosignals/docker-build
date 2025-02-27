@@ -82,7 +82,7 @@ runs:
         branch: ${{ github.head_ref || (github.ref_type == 'branch' && github.ref_name || '') }}
     - name: Docker metadata
       id: metadata
-      uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
+      uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
       with:
         images: |
           ${{ inputs.image-repository }}
@@ -93,12 +93,13 @@ runs:
       env:
         # https://github.com/docker/metadata-action/issues/206
         DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit.outputs.is-pr-head-sha }}
+        DOCKER_METADATA_SET_OUTPUT_ENV: "false"
     # Use separate cache images to avoid bloating final images
     # https://docs.docker.com/build/cache/backends/registry/
     - name: Docker cache-from
       id: cache-from
       if: ${{ inputs.from-scratch != 'true' }}
-      uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
+      uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
       with:
         images: |
           ${{ inputs.image-repository }}
@@ -110,9 +111,10 @@ runs:
       env:
         # https://github.com/docker/metadata-action/issues/206
         DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit.outputs.is-pr-head-sha }}
+        DOCKER_METADATA_SET_OUTPUT_ENV: "false"
     - name: Docker cache-to
       id: cache-to
-      uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
+      uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
       with:
         images: |
           ${{ inputs.image-repository }}
@@ -122,21 +124,7 @@ runs:
       env:
         # https://github.com/docker/metadata-action/issues/206
         DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit.outputs.is-pr-head-sha }}
-    # Disable environmental variables set by `docker/metadata-action`:
-    # https://github.com/docker/metadata-action#outputs
-    # https://github.com/docker/metadata-action/issues/490
-    - name: Unset metadata-action environment variables
-      shell: bash
-      run: |
-        echo "DOCKER_METADATA_OUTPUT_VERSION=" >>"$GITHUB_ENV"
-        echo "DOCKER_METADATA_OUTPUT_TAGS=" >>"$GITHUB_ENV"
-        echo "DOCKER_METADATA_OUTPUT_LABELS=" >>"$GITHUB_ENV"
-        echo "DOCKER_METADATA_OUTPUT_ANNOTATIONS=" >>"$GITHUB_ENV"
-        echo "DOCKER_METADATA_OUTPUT_JSON=" >>"$GITHUB_ENV"
-        echo "DOCKER_METADATA_OUTPUT_BAKE_FILE_TAGS=" >>"$GITHUB_ENV"
-        echo "DOCKER_METADATA_OUTPUT_BAKE_FILE_LABELS=" >>"$GITHUB_ENV"
-        echo "DOCKER_METADATA_OUTPUT_BAKE_FILE_ANNOTATIONS=" >>"$GITHUB_ENV"
-        echo "DOCKER_METADATA_OUTPUT_BAKE_FILE=" >>"$GITHUB_ENV"
+        DOCKER_METADATA_SET_OUTPUT_ENV: "false"
     - name: Docker cache metadata
       id: cache
       shell: bash
