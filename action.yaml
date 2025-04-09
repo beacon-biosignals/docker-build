@@ -20,6 +20,8 @@ inputs:
   from-scratch:
     description: Do not read from the cache when building the image.
     default: "false"
+  cache-mount-ids:
+    default: ""
 outputs:
   image:
     description: Reference to the build image including the digest.
@@ -151,18 +153,18 @@ runs:
       uses: actions/cache@v4
       with:
         path: |
-          julia-depot-cache
-        key: julia-depot-cache-${{ hashFiles(format('{0}/**', inputs.context)) }}
+          ${{ github.action_path }}/cache-mount
+        key: docker-build-cache-mount-${{ hashFiles(format('{0}/**', inputs.context)) }}
         restore-keys: |
-          julia-depot-cache
+          docker-build-cache-mount
     - name: Restore Docker cache mounts
       uses: reproducible-containers/buildkit-cache-dance@61bd187f75f25d38e056fdd48506fac777c6ebec
       with:
         cache-map: |
           {
-            "julia-depot-cache": {
-              "target": "/mnt/julia-depot",
-              "id": "julia-depot"
+            "${{ github.action_path }}/cache-mount/julia-depot": {
+              "id": "julia-depot",
+              "target": "/tmp/julia-depot"
             }
           }
         builder: ${{ steps.builder.outputs.name }}
