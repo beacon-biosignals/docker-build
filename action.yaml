@@ -20,9 +20,6 @@ inputs:
   from-scratch:
     description: Do not read from the cache when building the image.
     default: "false"
-  builder:
-    description: The name of the buildx builder to use.
-    default: ""
 outputs:
   image:
     description: Reference to the build image including the digest.
@@ -44,7 +41,6 @@ runs:
   steps:
     - name: Set up Docker Buildx
       id: builder
-      if: ${{ inputs.builder == '' }}
       uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca # v3.9.0
       with:
         driver: docker-container
@@ -151,12 +147,31 @@ runs:
       env:
         from_tags: ${{ steps.cache-from.outputs.tags }}
         to_tags: ${{ steps.cache-to.outputs.tags }}
+    - name: Retrieve Docker cache mount bundle
+      uses: actions/cache@v4
+      with:
+        path: |
+          julia-depot-cache
+        key: julia-depot-cache-${{ hashFiles(format('{0}/Manifest.toml', fromJSON(steps.service.outputs.json).service-harness.path)) }}
+        restore-keys: |
+          julia-depot-cache
+    - name: Restore Docker cache mounts
+      uses: reproducible-containers/buildkit-cache-dance@5b6db76d1da5c8b307d5d2e0706d266521b710de # v3.1.2
+      with:
+        cache-map: |
+          {
+            "julia-depot-cache": {
+              "target": "/mnt/julia-depot",
+              "id": "julia-depot"
+            }
+          }
+        builder: ${{ steps.builder.outputs.name }}
     - name: Build and Push
       id: build-push
       uses: docker/build-push-action@0adf9959216b96bec444f325f1e493d4aa344497 # v6.14.0
       with:
         context: ${{ inputs.context }}
-        builder: ${{ inputs.builder || steps.setup-buildx.outputs.name }}
+        builder: ${{ steps.setup-buildx.outputs.name }}
         build-args: ${{ inputs.build-args }}
         secrets: ${{ inputs.build-secrets }}
         cache-from: ${{ steps.cache.outputs.from-tags }}
