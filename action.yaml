@@ -20,7 +20,6 @@ inputs:
   from-scratch:
     description: Do not read from the cache when building the image.
     default: "false"
-  # https://docs.docker.com/reference/dockerfile/#run---mounttypecache
   cache-mount-ids:
     description: List of build cache mount IDs or targets to preserve across builds.
     default: ""
