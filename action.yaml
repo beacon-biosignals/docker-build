@@ -156,7 +156,7 @@ runs:
         restore-keys: |
           julia-depot-cache
     - name: Restore Docker cache mounts
-      uses: reproducible-containers/buildkit-cache-dance@5b6db76d1da5c8b307d5d2e0706d266521b710de # v3.1.2
+      uses: reproducible-containers/buildkit-cache-dance@61bd187f75f25d38e056fdd48506fac777c6ebec
       with:
         cache-map: |
           {
