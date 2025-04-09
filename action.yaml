@@ -149,6 +149,23 @@ runs:
       env:
         from_tags: ${{ steps.cache-from.outputs.tags }}
         to_tags: ${{ steps.cache-to.outputs.tags }}
+    - name: Process cache mount IDs
+      id: cache-mount
+      run: |
+        # Process cache mount IDs
+        cache_mount_ids="$(yq '. // []' -o json <<<"${cache_mount_ids}" | jq -r 'if type == "array" then . else error("\"cache-mount-ids\" root element must be a list") end')"
+        cache_map="$(jq --arg bind_root "${bind_root:?}" 'map(. as $id | {"key": ($bind_root + "/" + $id), "value": {"id": $id, "target": ("/tmp/" + $id)}}) | from_entries' <<<"${cache_map_ids}")"
+
+        # Specify our multiline output using GH action flavored heredocs
+        # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
+        {
+            echo "cache-map<<EOF"
+            jq <<<"${cache_map}"
+            echo "EOF"
+        } | tee -a "$GITHUB_OUTPUT"
+      env:
+        cache_mount_ids: ${{ inputs.cache-mount-ids }}
+        bind_root: ${{ github.action_path }}/cache-mount
     - name: Retrieve Docker cache mount bundle
       uses: actions/cache@v4
       with:
@@ -161,13 +178,7 @@ runs:
     - name: Restore Docker cache mounts
       uses: reproducible-containers/buildkit-cache-dance@61bd187f75f25d38e056fdd48506fac777c6ebec
       with:
-        cache-map: |
-          {
-            "${{ github.action_path }}/cache-mount/julia-depot": {
-              "id": "julia-depot",
-              "target": "/tmp/julia-depot"
-            }
-          }
+        cache-map: ${{ steps.cache-mount.outputs.cache-map }}
         builder: ${{ steps.builder.outputs.name }}
     - name: Build and Push
       id: build-push
