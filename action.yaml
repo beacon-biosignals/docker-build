@@ -153,14 +153,14 @@ runs:
       id: cache-mount
       run: |
         # Process cache mount IDs
-        cache_mount_ids="$(yq '. // []' -o json <<<"${cache_mount_ids}" | jq -r 'if type == "array" then . else error("\"cache-mount-ids\" root element must be a list") end')"
-        cache_map="$(jq --arg bind_root "${bind_root:?}" 'map(. as $id | {"key": ($bind_root + "/" + $id), "value": {"id": $id, "target": ("/tmp/" + $id)}}) | from_entries' <<<"${cache_map_ids}")"
+        ids_json="$(jq -R 'select(. != "")' <<<"${cache_mount_ids}" | jq -sc .)"
+        cache_map_json="$(jq --arg bind_root "${bind_root:?}" 'map(. as $id | {"key": ($bind_root + "/" + $id), "value": {"id": $id, "target": ("/tmp/" + $id)}}) | from_entries' <<<"${ids_json}")"
 
         # Specify our multiline output using GH action flavored heredocs
         # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
         {
             echo "cache-map<<EOF"
-            jq <<<"${cache_map}"
+            jq <<<"${cache_map_json}"
             echo "EOF"
         } | tee -a "$GITHUB_OUTPUT"
       env:
