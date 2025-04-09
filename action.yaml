@@ -157,6 +157,7 @@ runs:
         key: docker-build-cache-mount-${{ hashFiles(format('{0}/**', inputs.context)) }}
         restore-keys: |
           docker-build-cache-mount
+    # https://docs.docker.com/build/ci/github-actions/cache/#cache-mounts
     - name: Restore Docker cache mounts
       uses: reproducible-containers/buildkit-cache-dance@61bd187f75f25d38e056fdd48506fac777c6ebec
       with:
@@ -173,7 +174,7 @@ runs:
       uses: docker/build-push-action@0adf9959216b96bec444f325f1e493d4aa344497 # v6.14.0
       with:
         context: ${{ inputs.context }}
-        builder: ${{ steps.setup-buildx.outputs.name }}
+        builder: ${{ steps.builder.outputs.name }}
         build-args: ${{ inputs.build-args }}
         secrets: ${{ inputs.build-secrets }}
         cache-from: ${{ steps.cache.outputs.from-tags }}
