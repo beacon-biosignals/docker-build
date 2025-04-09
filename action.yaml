@@ -20,6 +20,9 @@ inputs:
   from-scratch:
     description: Do not read from the cache when building the image.
     default: "false"
+  builder:
+    description: The name of the buildx builder to use.
+    default: ""
 outputs:
   image:
     description: Reference to the build image including the digest.
@@ -36,14 +39,12 @@ outputs:
   commit-sha:
     description: The Git commit SHA used to build the image.
     value: ${{ steps.commit.outputs.sha }}
-  builder:
-    description The name of the buildx builder used.
-    value ${{ steps.setup-buildx.outputs.name }}
 runs:
   using: composite
   steps:
     - name: Set up Docker Buildx
       id: builder
+      if: ${{ inputs.builder == '' }}
       uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca # v3.9.0
       with:
         driver: docker-container
@@ -155,6 +156,7 @@ runs:
       uses: docker/build-push-action@0adf9959216b96bec444f325f1e493d4aa344497 # v6.14.0
       with:
         context: ${{ inputs.context }}
+        builder: ${{ inputs.builder || steps.setup-buildx.outputs.name }}
         build-args: ${{ inputs.build-args }}
         secrets: ${{ inputs.build-secrets }}
         cache-from: ${{ steps.cache.outputs.from-tags }}
