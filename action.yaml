@@ -151,6 +151,7 @@ runs:
         to_tags: ${{ steps.cache-to.outputs.tags }}
     - name: Process cache mount IDs
       id: cache-mount
+      shell: bash
       run: |
         # Process cache mount IDs
         ids_json="$(jq -R 'select(. != "")' <<<"${cache_mount_ids}" | jq -sc .)"
