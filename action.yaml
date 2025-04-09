@@ -20,7 +20,9 @@ inputs:
   from-scratch:
     description: Do not read from the cache when building the image.
     default: "false"
+  # https://docs.docker.com/reference/dockerfile/#run---mounttypecache
   cache-mount-ids:
+    description: List of build cache mount IDs or targets to preserve across builds.
     default: ""
 outputs:
   image:
@@ -155,6 +157,9 @@ runs:
       run: |
         # Process cache mount IDs
         ids_json="$(jq -R 'select(. != "")' <<<"${cache_mount_ids}" | jq -sc .)"
+
+        # We fully support user provided IDs which are absolute paths.
+        bind_root="$(readlink -f "${bind_root:?}")"
         cache_map_json="$(jq --arg bind_root "${bind_root:?}" 'map(. as $id | {"key": ($bind_root + "/" + $id), "value": {"id": $id, "target": ("/tmp/" + $id)}}) | from_entries' <<<"${ids_json}")"
 
         # Specify our multiline output using GH action flavored heredocs
