@@ -18,8 +18,13 @@ inputs:
     description: List of secrets to expose to the build.
     required: false
   from-scratch:
-    description: Do not read from the cache when building the image.
+    description: >-
+      Do not read from the cache when building the image. Writes to caches will still
+      occur.
     default: "false"
+  cache-mount-ids:
+    description: List of build cache mount IDs or targets to preserve across builds.
+    default: ""
 outputs:
   image:
     description: Reference to the build image including the digest.
@@ -40,6 +45,7 @@ runs:
   using: composite
   steps:
     - name: Set up Docker Buildx
+      id: builder
       uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca # v3.9.0
       with:
         driver: docker-container
@@ -146,11 +152,47 @@ runs:
       env:
         from_tags: ${{ steps.cache-from.outputs.tags }}
         to_tags: ${{ steps.cache-to.outputs.tags }}
+    - name: Process cache mount IDs
+      id: cache-mount
+      shell: bash
+      run: |
+        # Process cache mount IDs
+        ids_json="$(jq -R 'select(. != "")' <<<"${cache_mount_ids}" | jq -sc .)"
+
+        # We fully support user provided IDs which are absolute paths.
+        bind_root="$(readlink -f "${bind_root:?}")"
+        cache_map_json="$(jq --arg bind_root "${bind_root:?}" 'map(. as $id | {"key": ($bind_root + "/" + $id), "value": {"id": $id, "target": ("/tmp/" + $id)}}) | from_entries' <<<"${ids_json}")"
+
+        # Specify our multiline output using GH action flavored heredocs
+        # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
+        {
+            echo "cache-map<<EOF"
+            jq <<<"${cache_map_json}"
+            echo "EOF"
+        } | tee -a "$GITHUB_OUTPUT"
+      env:
+        cache_mount_ids: ${{ inputs.cache-mount-ids }}
+        bind_root: ${{ github.action_path }}/cache-mount
+    - name: Retrieve Docker cache mount bundle
+      uses: actions/cache@v4
+      with:
+        path: |
+          ${{ github.action_path }}/cache-mount
+        key: docker-build-cache-mount-${{ hashFiles(format('{0}/**', inputs.context)) }}
+        restore-keys: |
+          docker-build-cache-mount
+    # https://docs.docker.com/build/ci/github-actions/cache/#cache-mounts
+    - name: Restore Docker cache mounts
+      uses: reproducible-containers/buildkit-cache-dance@61bd187f75f25d38e056fdd48506fac777c6ebec
+      with:
+        cache-map: ${{ steps.cache-mount.outputs.cache-map }}
+        builder: ${{ steps.builder.outputs.name }}
     - name: Build and Push
       id: build-push
       uses: docker/build-push-action@0adf9959216b96bec444f325f1e493d4aa344497 # v6.14.0
       with:
         context: ${{ inputs.context }}
+        builder: ${{ steps.builder.outputs.name }}
         build-args: ${{ inputs.build-args }}
         secrets: ${{ inputs.build-secrets }}
         cache-from: ${{ steps.cache.outputs.from-tags }}
