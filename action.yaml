@@ -18,7 +18,9 @@ inputs:
     description: List of secrets to expose to the build.
     required: false
   from-scratch:
-    description: Do not read from the cache when building the image.
+    description: >-
+      Do not read from the cache when building the image. Writes to caches will still
+      occur.
     default: "false"
   cache-mount-ids:
     description: List of build cache mount IDs or targets to preserve across builds.
