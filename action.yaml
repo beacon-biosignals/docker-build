@@ -159,6 +159,7 @@ runs:
         to_tags: ${{ steps.cache-to.outputs.tags }}
     - name: Process cache mount IDs
       id: cache-mount
+      if: ${{ inputs.cache-mount-ids != '' }}
       shell: bash
       run: |
         # Process cache mount IDs
@@ -188,9 +189,10 @@ runs:
           docker-build-cache-mount
     # https://docs.docker.com/build/ci/github-actions/cache/#cache-mounts
     - name: Restore Docker cache mounts
-      uses: reproducible-containers/buildkit-cache-dance@61bd187f75f25d38e056fdd48506fac777c6ebec
+      uses: reproducible-containers/buildkit-cache-dance@653a570f730e3b9460adc576db523788ba59a0d7 # v3.2.0
       with:
         cache-map: ${{ steps.cache-mount.outputs.cache-map }}
+        dockerfile: ${{ inputs.dockerfile || format('{0}/Dockerfile', inputs.context) }}
         builder: ${{ steps.builder.outputs.name }}
     - name: Build and Push
       id: build-push
