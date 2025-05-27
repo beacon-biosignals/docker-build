@@ -11,6 +11,11 @@ inputs:
   context:
     description: The Docker build context directory.
     default: "."
+  dockerfile:
+    description: >-
+      Path to the Dockerfile relative to the `working-directory`. Defaults to
+      `${context}/Dockerfile`.
+    default: ""
   build-args:
     description: List of build-time variables.
     required: false
@@ -191,8 +196,9 @@ runs:
       id: build-push
       uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4 # v6.15.0
       with:
-        context: ${{ inputs.context }}
         builder: ${{ steps.builder.outputs.name }}
+        context: ${{ inputs.context }}
+        file: ${{ inputs.dockerfile }}
         build-args: ${{ inputs.build-args }}
         secrets: ${{ inputs.build-secrets }}
         cache-from: ${{ steps.cache.outputs.from-tags }}
