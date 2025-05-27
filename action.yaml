@@ -157,6 +157,13 @@ runs:
       env:
         from_tags: ${{ steps.cache-from.outputs.tags }}
         to_tags: ${{ steps.cache-to.outputs.tags }}
+    # Clean up the bind root path which otherwise may look like: /home/runner/work/docker-build/docker-build/.//cache-mount
+    - name: Bind root
+      id: bind-root
+      shell: bash
+      run: echo "path=$(readlink -f "${bind_root:?}")" | tee -a "$GITHUB_OUTPUT"
+      env:
+        bind_root: ${{ github.action_path }}/cache-mount
     - name: Process cache mount IDs
       id: cache-mount
       if: ${{ inputs.cache-mount-ids != '' }}
@@ -166,7 +173,6 @@ runs:
         ids_json="$(jq -R 'select(. != "")' <<<"${cache_mount_ids}" | jq -sc .)"
 
         # We fully support user provided IDs which are absolute paths.
-        bind_root="$(readlink -f "${bind_root:?}")"
         cache_map_json="$(jq --arg bind_root "${bind_root:?}" 'map(. as $id | {"key": ($bind_root + "/" + $id), "value": {"id": $id, "target": ("/tmp/" + $id)}}) | from_entries' <<<"${ids_json}")"
 
         # Specify our multiline output using GH action flavored heredocs
@@ -178,12 +184,11 @@ runs:
         } | tee -a "$GITHUB_OUTPUT"
       env:
         cache_mount_ids: ${{ inputs.cache-mount-ids }}
-        bind_root: ${{ github.action_path }}/cache-mount
+        bind_root: ${{ steps.bind-root.outputs.path }}
     - name: Retrieve Docker cache mount bundle
       uses: actions/cache@v4
       with:
-        path: |
-          ${{ github.action_path }}/cache-mount
+        path: ${{ steps.bind-root.outputs.path }}
         key: docker-build-cache-mount-${{ hashFiles(format('{0}/**', inputs.context)) }}
         restore-keys: |
           docker-build-cache-mount
@@ -194,7 +199,7 @@ runs:
       with:
         cache-map: ${{ steps.cache-mount.outputs.cache-map }}
         dockerfile: ${{ inputs.dockerfile || format('{0}/Dockerfile', inputs.context) }}
-        cache-dir: ${{ github.action_path }}/cache-mount
+        cache-dir: ${{ steps.bind-root.outputs.path }}
         builder: ${{ steps.builder.outputs.name }}
     - name: Build and Push
       id: build-push
