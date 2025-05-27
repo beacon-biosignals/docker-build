@@ -13,7 +13,7 @@ inputs:
     default: "."
   dockerfile:
     description: Path to the Dockerfile.
-    default: Dockerfile
+    default: ""
   build-args:
     description: List of build-time variables.
     required: false
