@@ -12,7 +12,9 @@ inputs:
     description: The Docker build context directory.
     default: "."
   dockerfile:
-    description: Path to the Dockerfile.
+    description: >-
+      Path to the Dockerfile relative to the `working-directory`. Defaults to
+      `${context}/Dockerfile`.
     default: ""
   build-args:
     description: List of build-time variables.
