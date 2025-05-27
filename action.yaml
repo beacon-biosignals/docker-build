@@ -189,10 +189,12 @@ runs:
           docker-build-cache-mount
     # https://docs.docker.com/build/ci/github-actions/cache/#cache-mounts
     - name: Restore Docker cache mounts
-      uses: reproducible-containers/buildkit-cache-dance@653a570f730e3b9460adc576db523788ba59a0d7 # v3.2.0
+      # uses: reproducible-containers/buildkit-cache-dance@cv/cache-dir
+      uses: omus/buildkit-cache-dance@cv/cache-dir
       with:
         cache-map: ${{ steps.cache-mount.outputs.cache-map }}
         dockerfile: ${{ inputs.dockerfile || format('{0}/Dockerfile', inputs.context) }}
+        cache-dir: ${{ github.action_path }}/cache-mount
         builder: ${{ steps.builder.outputs.name }}
     - name: Build and Push
       id: build-push
