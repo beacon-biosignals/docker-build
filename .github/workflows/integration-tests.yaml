@@ -122,9 +122,6 @@ jobs:
           build-args: |
             DEBIAN_VERSION=12.9
           from-scratch: ${{ matrix.test.from-scratch || 'false' }}
-          cache-mount-ids: |
-            /var/cache/apt
-            /var/lib/apt
       - name: Validate image works
         run: |
           docker pull "${{ steps.build.outputs.image }}"
