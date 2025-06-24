@@ -28,7 +28,9 @@ inputs:
       occur.
     default: "false"
   cache-mount-ids:
-    description: List of build cache mount IDs or targets to preserve across builds.
+    description: >-
+      List of build cache mount IDs or targets to preserve across builds. By default the
+      IDs are determined from the Dockerfile as specified in `dockerfile`.
     default: ""
 outputs:
   image:
