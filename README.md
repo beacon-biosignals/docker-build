@@ -37,9 +37,6 @@ jobs:
             github-token=${{ secrets.token || github.token }}
           # Build images from scratch on "main". Ensures that caching doesn't result in using insecure system packages.
           from-scratch: ${{ github.ref == 'refs/heads/main' }}
-          cache-mount-ids: |
-            /var/cache/apt
-            /var/lib/apt
 ```
 
 ## Inputs
@@ -52,7 +49,7 @@ jobs:
 | `build-args`         | List of [build-time variables](https://docs.docker.com/reference/cli/docker/buildx/build/#build-arg). | No | <pre><code>HTTP_PROXY=http://10.20.30.2:1234 &#10;FTP_PROXY=http://40.50.60.5:4567</code></pre> |
 | `build-secrets`      | List of [secrets](https://docs.docker.com/engine/reference/commandline/buildx_build/#secret) to expose to the build. | No | <pre><code>GIT_AUTH_TOKEN=mytoken</code></pre> |
 | `from-scratch`       | Do not read from the cache when building the image. Writes to caches will still occur. Defaults to `false`. | No | `false` |
-| `cache-mount-ids`    | List of build [cache mount IDs or targets](https://docs.docker.com/reference/dockerfile/#run---mounttypecache) to preserve across builds. | No | <pre><code>/var/cache/apt&#10;/var/lib/apt</code></pre> |
+| `cache-mount-ids`    | List of build [cache mount IDs or targets](https://docs.docker.com/reference/dockerfile/#run---mounttypecache) to preserve across builds. By default the IDs are determined from the Dockerfile as specified in `dockerfile`. | No | <pre><code>/var/cache/apt&#10;/var/lib/apt</code></pre> |
 
 ## Outputs
 
