@@ -27,11 +27,6 @@ inputs:
       Do not read from the cache when building the image. Writes to caches will still
       occur.
     default: "false"
-  cache-mount-ids:
-    description: >-
-      List of build cache mount IDs or targets to preserve across builds. By default the
-      IDs are determined from the Dockerfile as specified in `dockerfile`.
-    default: ""
 outputs:
   image:
     description: Reference to the build image including the digest.
@@ -166,27 +161,6 @@ runs:
       run: echo "path=$(readlink -f "${bind_root:?}")" | tee -a "$GITHUB_OUTPUT"
       env:
         bind_root: ${{ github.action_path }}/cache-mount
-    - name: Process cache mount IDs
-      id: cache-mount
-      if: ${{ inputs.cache-mount-ids != '' }}
-      shell: bash
-      run: |
-        # Process cache mount IDs
-        ids_json="$(jq -R 'select(. != "")' <<<"${cache_mount_ids}" | jq -sc .)"
-
-        # We fully support user provided IDs which are absolute paths.
-        cache_map_json="$(jq --arg bind_root "${bind_root:?}" 'map(. as $id | {"key": ($bind_root + "/" + $id), "value": {"id": $id, "target": ("/tmp/" + $id)}}) | from_entries' <<<"${ids_json}")"
-
-        # Specify our multiline output using GH action flavored heredocs
-        # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
-        {
-            echo "cache-map<<EOF"
-            jq <<<"${cache_map_json}"
-            echo "EOF"
-        } | tee -a "$GITHUB_OUTPUT"
-      env:
-        cache_mount_ids: ${{ inputs.cache-mount-ids }}
-        bind_root: ${{ steps.bind-root.outputs.path }}
     - name: Retrieve Docker cache mount bundle
       uses: actions/cache@v4
       with:
@@ -198,7 +172,6 @@ runs:
     - name: Restore Docker cache mounts
       uses: reproducible-containers/buildkit-cache-dance@5b81f4d29dc8397a7d341dba3aeecc7ec54d6361 # v3.3.0
       with:
-        cache-map: ${{ steps.cache-mount.outputs.cache-map }}
         dockerfile: ${{ inputs.dockerfile || format('{0}/Dockerfile', inputs.context) }}
         cache-dir: ${{ steps.bind-root.outputs.path }}
         builder: ${{ steps.builder.outputs.name }}
