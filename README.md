@@ -6,6 +6,8 @@ When using this action we recommend utilizing a separate image repositories for 
 
 Note that although [Docker does support using GitHub Actions cache](https://docs.docker.com/build/cache/backends/gha/) as a layer cache backend the GHA cache limit for a repository is 10 GB which is quite limiting for larger Docker images.
 
+If your Dockerfile makes [use of cache mounts](https://docs.docker.com/build/cache/optimize/#use-cache-mounts) (e.g. `--mount=type=cache`) then that cache information will be stored/restored from the GitHub Actions cache. This allows for faster Docker builds when layers are invalidated.
+
 ## Example
 
 ```yaml
@@ -49,7 +51,6 @@ jobs:
 | `build-args`         | List of [build-time variables](https://docs.docker.com/reference/cli/docker/buildx/build/#build-arg). | No | <pre><code>HTTP_PROXY=http://10.20.30.2:1234 &#10;FTP_PROXY=http://40.50.60.5:4567</code></pre> |
 | `build-secrets`      | List of [secrets](https://docs.docker.com/engine/reference/commandline/buildx_build/#secret) to expose to the build. | No | <pre><code>GIT_AUTH_TOKEN=mytoken</code></pre> |
 | `from-scratch`       | Do not read from the cache when building the image. Writes to caches will still occur. Defaults to `false`. | No | `false` |
-| `cache-mount-ids`    | List of build [cache mount IDs or targets](https://docs.docker.com/reference/dockerfile/#run---mounttypecache) to preserve across builds. By default the IDs are determined from the Dockerfile as specified in `dockerfile`. | No | <pre><code>/var/cache/apt&#10;/var/lib/apt</code></pre> |
 
 ## Outputs
 
