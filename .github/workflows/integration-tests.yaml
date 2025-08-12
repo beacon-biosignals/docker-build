@@ -105,7 +105,7 @@ jobs:
         run: |
           job_started_at="$(date --utc --iso-8601=seconds)"
           echo "at=$job_started_at" | tee -a "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ matrix.test.commit-sha }}
       - name: Log in to the Container registry
