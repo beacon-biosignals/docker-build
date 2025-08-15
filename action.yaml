@@ -95,7 +95,7 @@ runs:
         branch: ${{ github.head_ref || (github.ref_type == 'branch' && github.ref_name || '') }}
     - name: Docker metadata
       id: metadata
-      uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
+      uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
       with:
         images: |
           ${{ inputs.image-repository }}
@@ -112,7 +112,7 @@ runs:
     - name: Docker cache-from
       id: cache-from
       if: ${{ inputs.from-scratch != 'true' }}
-      uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
+      uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
       with:
         images: |
           ${{ inputs.image-repository }}
@@ -127,7 +127,7 @@ runs:
         DOCKER_METADATA_SET_OUTPUT_ENV: "false"
     - name: Docker cache-to
       id: cache-to
-      uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
+      uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
       with:
         images: |
           ${{ inputs.image-repository }}
