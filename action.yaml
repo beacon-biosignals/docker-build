@@ -32,6 +32,18 @@ inputs:
       List of build cache mount IDs or targets to preserve across builds. By default the
       IDs are determined from the Dockerfile as specified in `dockerfile`.
     default: ""
+  use-layer-caching:
+    description: >-
+      Store Docker layer cache data in the `image-repository` to accelerate image building.
+      These cache images are stored using the "cache-*" tag. Typically, should be enabled
+      but it can be useful to disable for debugging purposes.
+    default: "true"
+  use-mount-caching:
+    description: >-
+      Store data contained within `--mount=type=cache` in GitHub Actions cache entries such
+      that it can be used between image builds in CI workflows. Typically, should be enabled
+      but it can be useful to disable for debugging purposes.
+    default: "true"
 outputs:
   image:
     description: Reference to the build image including the digest.
@@ -111,7 +123,7 @@ runs:
     # https://docs.docker.com/build/cache/backends/registry/
     - name: Docker cache-from
       id: cache-from
-      if: ${{ inputs.from-scratch != 'true' }}
+      if: ${{ inputs.use-layer-caching == 'true' && inputs.from-scratch != 'true' }}
       uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
       with:
         images: |
@@ -127,6 +139,7 @@ runs:
         DOCKER_METADATA_SET_OUTPUT_ENV: "false"
     - name: Docker cache-to
       id: cache-to
+      if: ${{ inputs.use-layer-caching == 'true' }}
       uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
       with:
         images: |
@@ -140,6 +153,7 @@ runs:
         DOCKER_METADATA_SET_OUTPUT_ENV: "false"
     - name: Docker cache metadata
       id: cache
+      if: ${{ inputs.use-layer-caching == 'true' }}
       shell: bash
       run: |
         # Docker cache metadata
@@ -168,7 +182,7 @@ runs:
         bind_root: ${{ github.action_path }}/cache-mount
     - name: Process cache mount IDs
       id: cache-mount
-      if: ${{ inputs.cache-mount-ids != '' }}
+      if: ${{ inputs.use-mount-caching == 'true' && inputs.cache-mount-ids != '' }}
       shell: bash
       run: |
         # Process cache mount IDs
@@ -188,6 +202,7 @@ runs:
         cache_mount_ids: ${{ inputs.cache-mount-ids }}
         bind_root: ${{ steps.bind-root.outputs.path }}
     - name: Retrieve Docker cache mount bundle
+      if: ${{ inputs.use-mount-caching == 'true' }}
       uses: actions/cache@v4
       with:
         path: ${{ steps.bind-root.outputs.path }}
@@ -196,6 +211,7 @@ runs:
           docker-build-cache-mount
     # https://docs.docker.com/build/ci/github-actions/cache/#cache-mounts
     - name: Restore Docker cache mounts
+      if: ${{ inputs.use-mount-caching == 'true' }}
       uses: reproducible-containers/buildkit-cache-dance@5b81f4d29dc8397a7d341dba3aeecc7ec54d6361 # v3.3.0
       with:
         cache-map: ${{ steps.cache-mount.outputs.cache-map }}

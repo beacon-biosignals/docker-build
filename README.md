@@ -50,6 +50,8 @@ jobs:
 | `build-secrets`      | List of [secrets](https://docs.docker.com/engine/reference/commandline/buildx_build/#secret) to expose to the build. | No | <pre><code>GIT_AUTH_TOKEN=mytoken</code></pre> |
 | `from-scratch`       | Do not read from the cache when building the image. Writes to caches will still occur. Defaults to `false`. | No | `false` |
 | `cache-mount-ids`    | List of build [cache mount IDs or targets](https://docs.docker.com/reference/dockerfile/#run---mounttypecache) to preserve across builds. By default the IDs are determined from the Dockerfile as specified in `dockerfile`. | No | <pre><code>/var/cache/apt&#10;/var/lib/apt</code></pre> |
+| `use-layer-caching`  | Store Docker layer cache data in the `image-repository` to accelerate image building. These cache images are stored using the "cache-*" tag. Typically, should be enabled but it can be useful to disable for debugging purposes. | No | `false` |
+| `use-mount-caching`  | Store data contained within `--mount=type=cache` in GitHub Actions cache entries such that it can be used between image builds in CI workflows. Typically, should be enabled but it can be useful to disable for debugging purposes. | No | `false` |
 
 ## Outputs
 
