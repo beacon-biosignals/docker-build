@@ -35,12 +35,14 @@ inputs:
   use-layer-caching:
     description: >-
       Store Docker layer cache data in the `image-repository` to accelerate image building.
-      These cache images are stored using the "cache-*" tag.
+      These cache images are stored using the "cache-*" tag. Typically, should be enabled
+      but it can be useful to disable for debugging purposes.
     default: "true"
   use-mount-caching:
     description: >-
       Store data contained within `--mount=type=cache` in GitHub Actions cache entries such
-      that it can be used between image builds in CI workflows.
+      that it can be used between image builds in CI workflows. Typically, should be enabled
+      but it can be useful to disable for debugging purposes.
     default: "true"
 outputs:
   image:
