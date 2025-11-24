@@ -14,7 +14,7 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       # https://github.com/rhysd/actionlint/blob/v1.7.6/docs/usage.md#use-actionlint-on-github-actions
       # https://github.com/rhysd/actionlint/blob/v1.7.6/docs/usage.md#reviewdog
       # https://github.com/reviewdog/reviewdog#filter-mode
