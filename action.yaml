@@ -203,7 +203,7 @@ runs:
         bind_root: ${{ steps.bind-root.outputs.path }}
     - name: Retrieve Docker cache mount bundle
       if: ${{ inputs.use-mount-caching == 'true' }}
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ${{ steps.bind-root.outputs.path }}
         key: docker-build-cache-mount-${{ hashFiles(format('{0}/**', inputs.context)) }}
