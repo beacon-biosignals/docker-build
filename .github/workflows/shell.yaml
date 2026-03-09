@@ -27,7 +27,7 @@ jobs:
         with:
           sh_checker_comment: true
       # Support investigating linting/formatting errors
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: ${{ failure() }}
         with:
           name: workflow-scripts
