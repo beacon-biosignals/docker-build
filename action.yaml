@@ -27,6 +27,14 @@ inputs:
       Do not read from the cache when building the image. Writes to caches will still
       occur.
     default: "false"
+  global-tag-prefix:
+    description: >-
+      Prefix added to all tags (using the `flavor` input of docker/metadata-action)
+    default: ""
+  global-tag-suffix:
+    description: >-
+      Suffix added to all tags (using the `flavor` input of docker/metadata-action)
+    default: ""
   cache-mount-ids:
     description: >-
       List of build cache mount IDs or targets to preserve across builds. By default the
@@ -111,6 +119,10 @@ runs:
       with:
         images: |
           ${{ inputs.image-repository }}
+        flavor: |
+          latest=auto
+          prefix=${{ inputs.global-tag-prefix }}
+          suffix=${{ inputs.global-tag-suffix }}
         tags: |
           type=sha,prefix=sha-,format=short
           type=ref,prefix=pr-,event=pr
