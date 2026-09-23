@@ -113,10 +113,10 @@ runs:
       if: ${{ inputs.global-tag-prefix }}
       shell: bash
       run: |
-        if [[ "$prefix" =~ (^[a-z]+(-[a-z]+)*$) ]]; then
+        if [[ "$prefix" =~ (^[a-z]+(-[a-z]+)*-?$) ]]; then
             echo "Global tag prefix: $prefix"
         else
-            echo "Global tag prefix input must be `lower-kebab-case`: $prefix" >&2
+            echo "Global tag prefix input must be lower-kebab-case: $prefix" >&2
             exit 1
         fi
       env:
