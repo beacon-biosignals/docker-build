@@ -27,6 +27,10 @@ inputs:
       Do not read from the cache when building the image. Writes to caches will still
       occur.
     default: "false"
+  global-tag-prefix:
+    description: >-
+      Prefix added to all tags
+    default: ""
   cache-mount-ids:
     description: >-
       List of build cache mount IDs or targets to preserve across builds. By default the
@@ -105,6 +109,18 @@ runs:
         echo "name=${branch}" | tee -a "$GITHUB_OUTPUT"
       env:
         branch: ${{ github.head_ref || (github.ref_type == 'branch' && github.ref_name || '') }}
+    - name: Validate prefix
+      if: ${{ inputs.global-tag-prefix }}
+      shell: bash
+      run: |
+        if [[ "$prefix" =~ (^[a-z]+(-[a-z]+)*-?$) ]]; then
+            echo "Global tag prefix: $prefix"
+        else
+            echo "Global tag prefix input must be lower-kebab-case: $prefix" >&2
+            exit 1
+        fi
+      env:
+        prefix: ${{ inputs.global-tag-prefix }}
     - name: Docker metadata
       id: metadata
       uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
@@ -112,9 +128,9 @@ runs:
         images: |
           ${{ inputs.image-repository }}
         tags: |
-          type=sha,prefix=sha-,format=short
-          type=ref,prefix=pr-,event=pr
-          type=raw,prefix=branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
+          type=sha,prefix=${{ inputs.global-tag-prefix }}sha-,format=short
+          type=ref,prefix=${{ inputs.global-tag-prefix }}pr-,event=pr
+          type=raw,prefix=${{ inputs.global-tag-prefix }}branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
       env:
         # https://github.com/docker/metadata-action/issues/206
         DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit.outputs.is-pr-head-sha }}
@@ -129,10 +145,10 @@ runs:
         images: |
           ${{ inputs.image-repository }}
         tags: |
-          type=sha,prefix=cache-sha-,format=long
-          type=raw,prefix=cache-branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
-          type=raw,prefix=cache-sha-,value=${{ github.event.pull_request.base.sha }},enable=${{ github.event_name == 'pull_request' }}
-          type=raw,prefix=cache-branch-,value=${{ github.event.repository.default_branch }},enable=${{ github.event_name != 'pull_request' && github.event.repository.default_branch != steps.branch.outputs.name }}
+          type=sha,prefix=cache-${{ inputs.global-tag-prefix }}sha-,format=long
+          type=raw,prefix=cache-${{ inputs.global-tag-prefix }}branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
+          type=raw,prefix=cache-${{ inputs.global-tag-prefix }}sha-,value=${{ github.event.pull_request.base.sha }},enable=${{ github.event_name == 'pull_request' }}
+          type=raw,prefix=cache-${{ inputs.global-tag-prefix }}branch-,value=${{ github.event.repository.default_branch }},enable=${{ github.event_name != 'pull_request' && github.event.repository.default_branch != steps.branch.outputs.name }}
       env:
         # https://github.com/docker/metadata-action/issues/206
         DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit.outputs.is-pr-head-sha }}
@@ -145,8 +161,8 @@ runs:
         images: |
           ${{ inputs.image-repository }}
         tags: |
-          type=sha,prefix=cache-sha-,format=long
-          type=raw,prefix=cache-branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
+          type=sha,prefix=cache-${{ inputs.global-tag-prefix }}sha-,format=long
+          type=raw,prefix=cache-${{ inputs.global-tag-prefix }}branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
       env:
         # https://github.com/docker/metadata-action/issues/206
         DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit.outputs.is-pr-head-sha }}
