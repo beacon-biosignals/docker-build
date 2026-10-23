@@ -29,7 +29,7 @@ inputs:
     default: "false"
   global-tag-prefix:
     description: >-
-      Prefix added to all tags (using the `flavor` input of docker/metadata-action)
+      Prefix added to all tags
     default: ""
   cache-mount-ids:
     description: >-
