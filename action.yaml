@@ -110,19 +110,19 @@ runs:
       env:
         branch: ${{ github.head_ref || (github.ref_type == 'branch' && github.ref_name || '') }}
     - name: Validate prefix
-      if: ${{ inputs.global-tag-prefix }}
+      id: tag-prefix
+      if: ${{ inputs.tag-prefix }}
       shell: bash
       run: |
         if [[ "$prefix" =~ (^[a-z]+(-[a-z]+)*-?$) ]]; then
             prefix="${prefix%-}-"
             echo "prefix=${prefix}" | tee -a "$GITHUB_OUTPUT"
-            echo "Global tag prefix: $prefix"
         else
-            echo "Global tag prefix input must be lower-kebab-case: $prefix" >&2
+            echo "Tag prefix input must be lower-kebab-case: $prefix" >&2
             exit 1
         fi
       env:
-        prefix: ${{ inputs.global-tag-prefix }}
+        prefix: ${{ inputs.tag-prefix }}
     - name: Docker metadata
       id: metadata
       uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
@@ -130,9 +130,9 @@ runs:
         images: |
           ${{ inputs.image-repository }}
         tags: |
-          type=sha,prefix=${{ inputs.global-tag-prefix }}sha-,format=short
-          type=ref,prefix=${{ inputs.global-tag-prefix }}pr-,event=pr
-          type=raw,prefix=${{ inputs.global-tag-prefix }}branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
+          type=sha,prefix=${{ steps.tag-prefix.outputs.prefix }}sha-,format=short
+          type=ref,prefix=${{ steps.tag-prefix.outputs.prefix }}pr-,event=pr
+          type=raw,prefix=${{ steps.tag-prefix.outputs.prefix }}branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
       env:
         # https://github.com/docker/metadata-action/issues/206
         DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit.outputs.is-pr-head-sha }}
@@ -147,10 +147,10 @@ runs:
         images: |
           ${{ inputs.image-repository }}
         tags: |
-          type=sha,prefix=cache-${{ inputs.global-tag-prefix }}sha-,format=long
-          type=raw,prefix=cache-${{ inputs.global-tag-prefix }}branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
-          type=raw,prefix=cache-${{ inputs.global-tag-prefix }}sha-,value=${{ github.event.pull_request.base.sha }},enable=${{ github.event_name == 'pull_request' }}
-          type=raw,prefix=cache-${{ inputs.global-tag-prefix }}branch-,value=${{ github.event.repository.default_branch }},enable=${{ github.event_name != 'pull_request' && github.event.repository.default_branch != steps.branch.outputs.name }}
+          type=sha,prefix=cache-${{ steps.tag-prefix.outputs.prefix }}sha-,format=long
+          type=raw,prefix=cache-${{ steps.tag-prefix.outputs.prefix }}branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
+          type=raw,prefix=cache-${{ steps.tag-prefix.outputs.prefix }}sha-,value=${{ github.event.pull_request.base.sha }},enable=${{ github.event_name == 'pull_request' }}
+          type=raw,prefix=cache-${{ steps.tag-prefix.outputs.prefix }}branch-,value=${{ github.event.repository.default_branch }},enable=${{ github.event_name != 'pull_request' && github.event.repository.default_branch != steps.branch.outputs.name }}
       env:
         # https://github.com/docker/metadata-action/issues/206
         DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit.outputs.is-pr-head-sha }}
@@ -163,8 +163,8 @@ runs:
         images: |
           ${{ inputs.image-repository }}
         tags: |
-          type=sha,prefix=cache-${{ inputs.global-tag-prefix }}sha-,format=long
-          type=raw,prefix=cache-${{ inputs.global-tag-prefix }}branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
+          type=sha,prefix=cache-${{ steps.tag-prefix.outputs.prefix }}sha-,format=long
+          type=raw,prefix=cache-${{ steps.tag-prefix.outputs.prefix }}branch-,value=${{ steps.branch.outputs.name }},enable=${{ steps.branch.outputs.name != '' }}
       env:
         # https://github.com/docker/metadata-action/issues/206
         DOCKER_METADATA_PR_HEAD_SHA: ${{ steps.commit.outputs.is-pr-head-sha }}
