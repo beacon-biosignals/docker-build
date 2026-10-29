@@ -27,7 +27,7 @@ inputs:
       Do not read from the cache when building the image. Writes to caches will still
       occur.
     default: "false"
-  global-tag-prefix:
+  tag-prefix:
     description: >-
       Prefix added to all tags
     default: ""
@@ -114,6 +114,8 @@ runs:
       shell: bash
       run: |
         if [[ "$prefix" =~ (^[a-z]+(-[a-z]+)*-?$) ]]; then
+            prefix="${prefix%-}-"
+            echo "prefix=${prefix}" | tee -a "$GITHUB_OUTPUT"
             echo "Global tag prefix: $prefix"
         else
             echo "Global tag prefix input must be lower-kebab-case: $prefix" >&2
